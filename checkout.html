@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VBS 2026 — Check Out</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FFF7ED;
+    --card: #FFFFFF;
+    --primary: #F59E0B;
+    --primary-dark: #D97706;
+    --primary-light: #FFFBEB;
+    --green: #22C55E;
+    --green-light: #F0FDF4;
+    --red: #EF4444;
+    --text: #1A2744;
+    --muted: #7A8BAD;
+    --border: #E2E8F0;
+    --radius: 16px;
+    --shadow: 0 4px 24px rgba(245,158,11,.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ── PIN SCREEN ── */
+  .pin-screen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%);
+  }
+  .pin-box {
+    background: white; border-radius: 24px; padding: 40px 36px; width: 340px;
+    text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  }
+  .pin-icon { font-size: 3rem; margin-bottom: 12px; }
+  .pin-title { font-family: 'Fredoka One', cursive; font-size: 1.6rem; color: var(--text); margin-bottom: 4px; }
+  .pin-sub { color: var(--muted); font-size: .85rem; margin-bottom: 24px; }
+  .pin-input {
+    width: 100%; padding: 12px 16px; font-size: 1rem; letter-spacing: normal;
+    text-align: left; border: 2px solid var(--border); border-radius: 12px;
+    font-family: 'Nunito', sans-serif; font-weight: 600; outline: none;
+    transition: border-color .2s; margin-bottom: 10px; box-sizing: border-box;
+  }
+  .pin-input:focus { border-color: var(--primary); }
+  .pin-btn {
+    margin-top: 16px; width: 100%; padding: 14px; background: var(--primary);
+    color: white; border: none; border-radius: 12px; font-size: 1rem;
+    font-weight: 800; font-family: 'Nunito', sans-serif; cursor: pointer; transition: opacity .2s;
+  }
+  .pin-btn:hover { opacity: .9; }
+  .pin-err { color: var(--red); font-size: .82rem; margin-top: 10px; font-weight: 700; min-height: 18px; }
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%);
+    padding: 16px 24px; color: white;
+  }
+  .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .header-title { font-family: 'Fredoka One', cursive; font-size: 1.4rem; }
+  .header-sub { font-size: .78rem; opacity: .85; margin-top: 2px; }
+
+  /* ── CLASS + DAY SELECTORS ── */
+  .selectors { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+  .sel-btn {
+    padding: 8px 14px; border-radius: 20px; border: 2px solid rgba(255,255,255,.4);
+    background: transparent; color: white; font-weight: 800; font-family: 'Nunito', sans-serif;
+    font-size: .78rem; cursor: pointer; transition: all .2s;
+  }
+  .sel-btn.active { background: white; color: #D97706; border-color: white; }
+  .sel-divider { width: 1px; background: rgba(255,255,255,.3); margin: 0 4px; }
+
+  /* ── LIVE BAR ── */
+  .live-bar {
+    background: white; border-bottom: 1px solid var(--border);
+    padding: 10px 24px; display: flex; gap: 24px; align-items: center; flex-wrap: wrap;
+  }
+  .live-stat { display: flex; align-items: center; gap: 8px; }
+  .clickable-stat {
+    cursor: pointer; padding: 6px 12px; border-radius: 12px;
+    transition: background .15s, transform .1s;
+  }
+  .clickable-stat:hover { background: rgba(0,0,0,.05); transform: translateY(-1px); }
+  .clickable-stat:active { transform: scale(.97); }
+
+  /* Filter Modal */
+  .fm-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 300;
+    display: flex; align-items: flex-end; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .fm-overlay.open { opacity: 1; pointer-events: all; }
+  .fm-modal {
+    background: white; border-radius: 24px 24px 0 0; width: 100%; max-width: 680px;
+    max-height: 80vh; display: flex; flex-direction: column;
+    transform: translateY(100%); transition: transform .3s cubic-bezier(.34,1.2,.64,1);
+    overflow: hidden;
+  }
+  .fm-overlay.open .fm-modal { transform: translateY(0); }
+  .fm-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 24px 16px; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: white; z-index: 1;
+  }
+  .fm-title { font-family: 'Fredoka One', cursive; font-size: 1.3rem; color: var(--text); }
+  .fm-close {
+    width: 32px; height: 32px; border-radius: 50%; border: none;
+    background: var(--bg); font-size: 1rem; cursor: pointer; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .fm-list { overflow-y: auto; padding: 12px 16px 32px; }
+  .fm-row {
+    display: flex; align-items: center; gap: 12px; padding: 12px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .fm-row:last-child { border-bottom: none; }
+  .fm-avatar { font-size: 1.5rem; width: 36px; text-align: center; }
+  .fm-name { font-weight: 800; font-size: .95rem; }
+  .fm-meta { font-size: .78rem; color: var(--muted); font-weight: 600; }
+  .fm-badge-out  { margin-left: auto; background: #DCFCE7; color: #166534; padding: 4px 10px; border-radius: 20px; font-size: .75rem; font-weight: 800; white-space: nowrap; }
+  .fm-badge-in   { margin-left: auto; background: #EDE9FE; color: #4F46E5; padding: 4px 10px; border-radius: 20px; font-size: .75rem; font-weight: 800; white-space: nowrap; }
+  .fm-empty { text-align: center; padding: 40px 20px; color: var(--muted); font-weight: 700; font-size: .9rem; }
+  .live-dot { width: 10px; height: 10px; border-radius: 50%; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.3)} }
+  .live-num { font-family: 'Fredoka One', cursive; font-size: 1.3rem; }
+  .live-lbl { font-size: .75rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+
+  /* ── MAIN ── */
+  .main { max-width: 680px; margin: 0 auto; padding: 24px 16px; }
+
+  /* ── TEACHER NAME ── */
+  .teacher-card { background: var(--card); border-radius: var(--radius); padding: 20px 24px; box-shadow: var(--shadow); margin-bottom: 20px; }
+  .teacher-label { font-weight: 800; font-size: .85rem; color: var(--primary); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+  .teacher-input {
+    width: 100%; padding: 12px 16px; font-size: 1rem; border: 2px solid var(--border);
+    border-radius: 12px; font-family: 'Nunito', sans-serif; font-weight: 700;
+    outline: none; transition: border-color .2s;
+  }
+  .teacher-input:focus { border-color: var(--primary); }
+
+  /* ── KIDS LIST ── */
+  .kids-card { background: var(--card); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); }
+  .kids-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .kids-title { font-family: 'Fredoka One', cursive; font-size: 1.1rem; }
+  .kids-badge {
+    background: var(--primary); color: white; padding: 4px 12px;
+    border-radius: 20px; font-size: .78rem; font-weight: 800;
+  }
+
+  .kid-row {
+    display: flex; align-items: center; gap: 12px; padding: 14px;
+    border: 2px solid var(--border); border-radius: 12px; margin-bottom: 10px;
+    transition: all .2s;
+  }
+  .kid-row.checked-out { background: var(--green-light); border-color: var(--green); opacity: .7; }
+  .kid-avatar {
+    width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-size: 1.3rem; background: var(--primary-light); flex-shrink: 0;
+  }
+  .kid-info { flex: 1; min-width: 0; }
+  .kid-name { font-weight: 800; font-size: .95rem; }
+  .kid-meta { font-size: .75rem; color: var(--muted); margin-top: 2px; }
+  .kid-allergy { font-size: .7rem; background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; border-radius: 6px; padding: 2px 7px; font-weight: 800; display: inline-block; margin-top: 3px; }
+  .kid-checkin-time { font-size: .72rem; color: var(--green); font-weight: 800; }
+
+  .checkout-btn {
+    padding: 10px 16px; background: var(--primary); color: white; border: none;
+    border-radius: 10px; font-weight: 800; font-family: 'Nunito', sans-serif;
+    font-size: .82rem; cursor: pointer; white-space: nowrap; transition: all .2s; flex-shrink: 0;
+  }
+  .checkout-btn:hover { background: var(--primary-dark); transform: scale(1.03); }
+  .out-badge {
+    padding: 8px 14px; background: var(--green); color: white; border-radius: 10px;
+    font-weight: 800; font-size: .78rem; white-space: nowrap; flex-shrink: 0;
+  }
+  .out-time { font-size: .68rem; opacity: .85; display: block; }
+
+  /* ── EMPTY / LOADING ── */
+  .empty-state { text-align: center; padding: 40px 24px; }
+  .empty-icon { font-size: 2.5rem; margin-bottom: 10px; }
+  .empty-title { font-family: 'Fredoka One', cursive; font-size: 1.1rem; color: var(--muted); }
+  .empty-sub { font-size: .82rem; color: var(--muted); margin-top: 6px; }
+  .spin { display: inline-block; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .warn-box { background: #FEE2E2; border: 2px solid #EF4444; border-radius: 12px; padding: 14px 18px; margin-bottom: 18px; font-weight: 800; color: #991B1B; font-size: .88rem; animation: shake .4s ease; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px);
+    background: var(--green); color: white; padding: 16px 28px; border-radius: 16px;
+    font-weight: 800; font-size: 1rem; box-shadow: 0 8px 32px rgba(34,197,94,.4);
+    transition: transform .4s cubic-bezier(.34,1.56,.64,1); z-index: 999;
+    text-align: center; min-width: 260px;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast-name { font-family: 'Fredoka One', cursive; font-size: 1.2rem; }
+  .toast-detail { font-size: .8rem; opacity: .9; margin-top: 3px; }
+
+  .refresh-btn {
+    margin-left: auto; display: flex; align-items: center; gap: 6px;
+    padding: 7px 14px; background: white; border: 2px solid var(--border);
+    border-radius: 20px; font-weight: 800; font-family: 'Nunito', sans-serif;
+    font-size: .78rem; cursor: pointer; color: var(--primary); transition: all .2s;
+  }
+  .refresh-btn:hover { background: var(--primary-light); border-color: var(--primary); }
+  .refresh-btn.spinning .r-icon { display: inline-block; animation: spin .6s linear infinite; }
+  .co-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .co-overlay.open { opacity: 1; pointer-events: all; }
+  .co-modal {
+    background: white; border-radius: 24px; padding: 32px 28px; width: 100%;
+    max-width: 360px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    transform: scale(.95); transition: transform .25s cubic-bezier(.34,1.56,.64,1);
+  }
+  .co-overlay.open .co-modal { transform: scale(1); }
+  .co-icon  { font-size: 3rem; margin-bottom: 10px; }
+  .co-title { font-family: "Fredoka One", cursive; font-size: 1.5rem; color: var(--text); margin-bottom: 8px; }
+  .co-sub   { font-size: .88rem; color: var(--muted); font-weight: 600; line-height: 1.5; margin-bottom: 24px; }
+  .co-btns  { display: flex; gap: 10px; }
+  .co-btn-no  { flex: 1; padding: 13px; border: 2px solid var(--border); border-radius: 12px; background: white; font-weight: 800; font-family: "Nunito",sans-serif; font-size: .9rem; cursor: pointer; color: var(--muted); transition: all .15s; }
+  .co-btn-no:hover  { border-color: var(--red); color: var(--red); }
+  .co-btn-yes { flex: 2; padding: 13px; background: var(--green); border: none; border-radius: 12px; color: white; font-weight: 800; font-family: "Nunito",sans-serif; font-size: .9rem; cursor: pointer; transition: opacity .15s; }
+  .co-btn-yes:hover { opacity: .9; }
+  .co-drop {
+    padding: 9px 18px; border-radius: 20px; border: 2px solid rgba(255,255,255,.5);
+    background: rgba(255,255,255,.15); color: white; font-weight: 800;
+    font-family: 'Nunito', sans-serif; font-size: .85rem; cursor: pointer;
+    outline: none; appearance: none; -webkit-appearance: none;
+    width: auto; min-width: 160px; max-width: 220px;
+    backdrop-filter: blur(4px);
+  }
+  .co-drop option { background: #D97706; color: white; }
+  .selectors { display: flex; gap: 8px; flex-wrap: wrap; }
+  @media (max-width: 480px) {
+    .header-top { flex-direction: column; gap: 10px; align-items: flex-start; }
+    .selectors { gap: 6px; }
+    .sel-btn { padding: 6px 10px; font-size: .72rem; }
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20%      { transform: translateX(-6px); }
+    40%      { transform: translateX(6px); }
+    60%      { transform: translateX(-4px); }
+    80%      { transform: translateX(4px); }
+  }
+  /* ── Display Mode Toggle ── */
+  .display-mode-toggle {
+    display: inline-flex; align-items: center; gap: 6px;
+    border-radius: 99px; padding: 5px 14px; cursor: pointer;
+    font-family: 'Nunito', sans-serif; font-size: .75rem; font-weight: 700;
+    transition: opacity .15s; user-select: none; border: 2px solid rgba(255,255,255,.4);
+    background: rgba(255,255,255,.15); color: white;
+  }
+  .display-mode-toggle:hover { opacity: .85; }
+  .dm-opt { transition: color .15s; opacity: .6; }
+  .dm-active { opacity: 1; font-weight: 800; }
+  .dm-sep { opacity: .4; }
+</style>
+</head>
+<body>
+
+<!-- PIN SCREEN -->
+<div class="pin-screen" id="pin-screen">
+  <div class="pin-box">
+    <div class="pin-icon">🏁</div>
+    <div class="pin-title">VBS 2026</div>
+    <div class="pin-sub">Check-Out · Sign in to continue</div>
+    <input class="pin-input" type="text" id="login-username" placeholder="Username" autocomplete="username"
+      style="margin-bottom:10px" onkeydown="if(event.key==='Enter')document.getElementById('login-password').focus()">
+    <input class="pin-input" type="password" id="login-password" placeholder="Password" autocomplete="current-password"
+      onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="pin-btn" id="pin-btn" onclick="doLogin()">Sign In →</button>
+    <div class="pin-err" id="pin-err"></div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none">
+  <header class="header">
+    <div class="header-top">
+      <div>
+        <div class="header-title">🏫 VBS 2026 — Check Out</div>
+        <div class="header-sub">India Christian Assembly NJ · Teacher View</div>
+      </div>
+      <div id="user-display" style="display:none;align-items:center;gap:8px">
+        <span id="user-name-label" style="font-size:.75rem;color:rgba(255,255,255,.7);font-weight:700"></span>
+        <button onclick="doLogout()"
+          style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);border-radius:6px;
+                 padding:4px 10px;color:rgba(255,255,255,.85);font-size:.72rem;font-weight:800;cursor:pointer"
+          onmouseover="this.style.background='rgba(239,68,68,.35)'"
+          onmouseout="this.style.background='rgba(255,255,255,.12)'">
+          🚪 Logout
+        </button>
+      </div>
+    </div>
+    <div class="selectors">
+      <button class="display-mode-toggle" onclick="toggleDisplayModeCheckout()" id="co-dm-toggle"
+        style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.4);color:white">
+        <span class="dm-opt dm-active">📋 Grade</span><span class="dm-sep">|</span><span class="dm-opt">🏫 Class</span>
+      </button>
+      <select class="co-drop" id="day-drop-m" onchange="setDayMobile(parseInt(this.value))">
+        <option value="0">📅 Select Day…</option>
+        <option value="1">Day 1 · July 9 (Thu)</option>
+        <option value="2">Day 2 · July 10 (Fri)</option>
+        <option value="3">Day 3 · July 11 (Sat)</option>
+      </select>
+      <select class="co-drop" id="class-drop-m" onchange="setClassMobile(this.value)">
+        <option value="">🏫 Select Class…</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- LIVE BAR -->
+  <div class="live-bar">
+    <div class="live-stat clickable-stat" onclick="showFilterModal('all')">
+      <div class="live-dot" style="background:#4F46E5"></div>
+      <div class="live-num" id="cnt-total">—</div>
+      <div class="live-lbl">Arrived Today</div>
+    </div>
+    <div class="live-stat clickable-stat" onclick="showFilterModal('out')">
+      <div class="live-dot" style="background:#22C55E"></div>
+      <div class="live-num" id="cnt-out">—</div>
+      <div class="live-lbl">Gone Home ✅</div>
+    </div>
+    <div class="live-stat clickable-stat" onclick="showFilterModal('inside')">
+      <div class="live-dot" style="background:#EF4444"></div>
+      <div class="live-num" id="cnt-remain">—</div>
+      <div class="live-lbl">Still Inside 🏠</div>
+    </div>
+    <button class="refresh-btn" id="refresh-btn" onclick="manualRefresh()" title="Refresh data">
+      <span class="r-icon">↻</span> Refresh
+    </button>
+    <div style="font-size:.75rem;color:var(--muted);font-weight:700" id="context-label">Select day &amp; class</div>
+  </div>
+
+  <div class="main">
+    <!-- WARN -->
+    <div class="warn-box" id="sel-warn">🚨 Please select a Day and your Class above to see your kids list.</div>
+
+    <!-- SEARCH -->
+    <div class="teacher-card" id="teacher-card" style="display:none">
+      <div class="teacher-label">🔍 Search Child in Class</div>
+      <input class="teacher-input" id="class-search" type="text" placeholder="Type child's name…" autocomplete="off" oninput="filterKidsList(this.value)">
+    </div>
+
+    <!-- KIDS LIST -->
+    <div class="kids-card" id="kids-card" style="display:none">
+      <div class="kids-header">
+        <div class="kids-title" id="class-title">Class</div>
+        <div class="kids-badge" id="class-badge">0 kids</div>
+      </div>
+      <div id="kids-list">
+        <div class="empty-state"><div class="spin">⏳</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FILTER MODAL -->
+<div class="fm-overlay" id="fm-overlay">
+  <div class="fm-modal">
+    <div class="fm-header">
+      <div class="fm-title" id="fm-title">All Kids</div>
+      <button class="fm-close" onclick="closeFilterModal()">✕</button>
+    </div>
+    <div class="fm-list" id="fm-list"></div>
+  </div>
+</div>
+
+<!-- LANYARD MODAL -->
+<div class="co-overlay" id="co-overlay">
+  <div class="co-modal">
+    <div class="co-icon">🏷️</div>
+    <div class="co-title">Lanyard Collected?</div>
+    <div class="co-sub" id="co-sub">Confirm you have taken back the lanyard from <strong id="co-name"></strong></div>
+    <div class="co-btns">
+      <button class="co-btn-no" onclick="closeLanyardModal()">✕ Not Yet</button>
+      <button class="co-btn-yes" onclick="confirmCheckout()">✅ Yes, Collected</button>
+    </div>
+  </div>
+</div>
+
+<!-- EARLY CHECKOUT REASON MODAL -->
+<div class="co-overlay" id="early-overlay">
+  <div class="co-modal" style="max-width:420px">
+    <div class="co-icon">⏰</div>
+    <div class="co-title" style="color:#D97706">Early Check-Out</div>
+    <div class="co-sub" id="early-sub" style="margin-bottom:16px"></div>
+    <div style="text-align:left;margin-bottom:10px">
+      <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:#92400E;margin-bottom:8px">Select a reason *</div>
+      <div style="display:flex;flex-direction:column;gap:7px" id="early-reason-options">
+        <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;border:2px solid #E2E8F0;border-radius:10px;cursor:pointer;font-size:.87rem;font-weight:700;transition:border-color .15s">
+          <input type="radio" name="early_reason" value="Family emergency" style="accent-color:#D97706;width:16px;height:16px"> 🚨 Family emergency
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;border:2px solid #E2E8F0;border-radius:10px;cursor:pointer;font-size:.87rem;font-weight:700;transition:border-color .15s">
+          <input type="radio" name="early_reason" value="Child not feeling well" style="accent-color:#D97706;width:16px;height:16px"> 🤒 Child not feeling well
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;border:2px solid #E2E8F0;border-radius:10px;cursor:pointer;font-size:.87rem;font-weight:700;transition:border-color .15s">
+          <input type="radio" name="early_reason" value="Parent request" style="accent-color:#D97706;width:16px;height:16px"> 👨‍👩‍👧 Parent request
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;border:2px solid #E2E8F0;border-radius:10px;cursor:pointer;font-size:.87rem;font-weight:700;transition:border-color .15s">
+          <input type="radio" name="early_reason" value="Prior commitment" style="accent-color:#D97706;width:16px;height:16px"> 📅 Prior commitment
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;border:2px solid #E2E8F0;border-radius:10px;cursor:pointer;font-size:.87rem;font-weight:700;transition:border-color .15s">
+          <input type="radio" name="early_reason" value="Other" style="accent-color:#D97706;width:16px;height:16px"> 📝 Other
+        </label>
+      </div>
+      <div id="early-other-wrap" style="display:none;margin-top:8px">
+        <textarea id="early-other-text" placeholder="Please describe the reason…"
+          style="width:100%;padding:10px 12px;border:2px solid #FCD34D;border-radius:10px;font-family:'Nunito',sans-serif;font-size:.85rem;resize:none;height:72px;outline:none"></textarea>
+      </div>
+      <div id="early-reason-err" style="color:#EF4444;font-size:.78rem;font-weight:700;margin-top:6px;min-height:16px"></div>
+    </div>
+    <div class="co-btns">
+      <button class="co-btn-no" onclick="closeEarlyModal()">✕ Cancel</button>
+      <button class="co-btn-yes" style="background:#D97706" onclick="submitEarlyCheckout()">✅ Confirm Check-Out</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div class="toast-name" id="toast-name"></div>
+  <div class="toast-detail" id="toast-detail"></div>
+</div>
+
+<script>
+  let PIN = null;
+  let currentUser = { username: '', display_name: 'Teacher' };
+  let userGroups = []; // assigned class groups for this user
+  window._displayMode = localStorage.getItem('vbs_display_mode') || 'grade';
+
+  const GROUP_CLASS_MAP = {
+    'Pre-K':       ['Pre-K'],
+    'Pre-Primary': ['Kindergarten','1st Grade','2nd Grade'],
+    'Primary':     ['3rd Grade','4th Grade','5th Grade'],
+    'Junior':      ['6th Grade','7th Grade','8th Grade']
+  };
+
+  const GRADE_OPTIONS = [
+    { value:'Pre-K',       label:'🎈 Pre-K' },
+    { value:'Kindergarten',label:'🌟 Kindergarten' },
+    { value:'1st Grade',   label:'📚 1st Grade' },
+    { value:'2nd Grade',   label:'✏️ 2nd Grade' },
+    { value:'3rd Grade',   label:'🚀 3rd Grade' },
+    { value:'4th Grade',   label:'⚽ 4th Grade' },
+    { value:'5th Grade',   label:'🔥 5th Grade' },
+    { value:'6th Grade',   label:'🎨 6th Grade' },
+    { value:'7th Grade',   label:'👑 7th Grade' },
+    { value:'8th Grade',   label:'🏆 8th Grade' }
+  ];
+
+  const CLASS_OPTIONS = [
+    { value:'Pre-K',       label:'🎈 Pre-K' },
+    { value:'Pre-Primary', label:'🎠 Pre-Primary' },
+    { value:'Primary',     label:'📘 Primary' },
+    { value:'Junior',      label:'🎓 Junior' }
+  ];
+
+  // Map class group keys to individual class names for DB filtering
+  const CLASS_GROUP_MAP = {
+    'Pre-K':       ['Pre-K'],
+    'Pre-Primary': ['Kindergarten','1st Grade','2nd Grade'],
+    'Primary':     ['3rd Grade','4th Grade','5th Grade'],
+    'Junior':      ['6th Grade','7th Grade','8th Grade']
+  };
+
+  function applyGroupFilter() {
+    if (userGroups.length === 0) {
+      window._allowedClasses = [];
+      window._allowedGroups  = [];
+    } else {
+      // For grade mode: expand groups to individual class names
+      let allowed = [];
+      userGroups.forEach(function(g) {
+        (GROUP_CLASS_MAP[g] || []).forEach(function(c) { if (!allowed.includes(c)) allowed.push(c); });
+      });
+      window._allowedClasses = allowed;
+      window._allowedGroups  = userGroups.slice(); // for class mode
+    }
+    rebuildClassDropdown();
+    var sel = document.getElementById('class-drop-m');
+    if (sel && userGroups.length === 0) {
+      sel.innerHTML = '<option value="">⚠️ No classes assigned</option>';
+    }
+  }
+
+  function rebuildClassDropdown() {
+    var sel = document.getElementById('class-drop-m');
+    if (!sel) return;
+    var prevVal = sel.value;
+    var options = window._displayMode === 'class' ? CLASS_OPTIONS : GRADE_OPTIONS;
+    sel.innerHTML = '<option value="">🏫 Select Class…</option>';
+    var isClassMode = window._displayMode === 'class';
+    var allowedClasses = window._allowedClasses || [];
+    var allowedGroups  = window._allowedGroups  || [];
+    var hasFilter = allowedClasses.length > 0 || allowedGroups.length > 0;
+    options.forEach(function(o) {
+      if (hasFilter) {
+        // In class mode: filter by group name; in grade mode: filter by individual class
+        var blocked = isClassMode
+          ? !allowedGroups.includes(o.value)
+          : !allowedClasses.includes(o.value);
+        if (blocked) return;
+      }
+      var opt = document.createElement('option');
+      opt.value = o.value; opt.textContent = o.label;
+      sel.appendChild(opt);
+    });
+    // Restore previous selection if still valid
+    var stillExists = Array.from(sel.options).find(function(o) { return o.value === prevVal; });
+    sel.value = stillExists ? prevVal : '';
+    if (!stillExists) {
+      selectedClass = '';
+      refresh();
+    }
+  }
+
+  function toggleDisplayModeCheckout() {
+    var newMode = window._displayMode === 'grade' ? 'class' : 'grade';
+    window._displayMode = newMode;
+    localStorage.setItem('vbs_display_mode', newMode);
+    rebuildClassDropdown();
+    var btn = document.getElementById('co-dm-toggle');
+    if (btn) {
+      var isClass = newMode === 'class';
+      btn.innerHTML =
+        '<span class="dm-opt' + (!isClass ? ' dm-active' : '') + '">📋 Grade</span>' +
+        '<span class="dm-sep">|</span>' +
+        '<span class="dm-opt' + (isClass  ? ' dm-active' : '') + '">🏫 Class</span>';
+    }
+  }
+
+  function initCheckoutToggle() {
+    rebuildClassDropdown();
+    var btn = document.getElementById('co-dm-toggle');
+    if (!btn) return;
+    var isClass = window._displayMode === 'class';
+    btn.innerHTML =
+      '<span class="dm-opt' + (!isClass ? ' dm-active' : '') + '">📋 Grade</span>' +
+      '<span class="dm-sep">|</span>' +
+      '<span class="dm-opt' + (isClass  ? ' dm-active' : '') + '">🏫 Class</span>';
+  }
+  const SCRIPT_URL = 'https://pypaonline.org/vbs/api.php';
+  /* ── LOAD ACTIVE DAYS FROM ADMIN SETTINGS ── */
+  async function loadDaySettings() {
+    const sel = document.getElementById('day-drop-m');
+    if (!sel) return;
+    try {
+      const res  = await fetch(SCRIPT_URL + '?action=getSettings&token=' + encodeURIComponent(PIN || '') + '&t=' + Date.now());
+      const json = await res.json();
+      const s    = json.settings || {};
+      const days = [
+        { val: '1', label: 'Day 1 · July 9 (Thu)',  key: 'day1_enabled' },
+        { val: '2', label: 'Day 2 · July 10 (Fri)', key: 'day2_enabled' },
+        { val: '3', label: 'Day 3 · July 11 (Sat)', key: 'day3_enabled' },
+      ];
+      const prevVal = sel.value; // remember current selection before rebuilding
+      [...sel.options].forEach(o => { if (o.value !== '0') o.remove(); });
+      let anyEnabled = false;
+      days.forEach(d => {
+        if (s[d.key] === '1') {
+          const opt = document.createElement('option');
+          opt.value = d.val; opt.textContent = d.label;
+          sel.appendChild(opt); anyEnabled = true;
+        }
+      });
+      if (!anyEnabled) {
+        const opt = document.createElement('option');
+        opt.value = ''; opt.disabled = true;
+        opt.textContent = '⏳ No days enabled — check admin panel';
+        sel.appendChild(opt);
+      }
+      // Restore previously selected day if it still exists in the rebuilt options
+      if (prevVal && prevVal !== '0') {
+        const stillExists = [...sel.options].find(o => o.value === prevVal && !o.disabled);
+        sel.value = stillExists ? prevVal : '0';
+        if (!stillExists) {
+          // Day was removed by admin — reset state and hide data
+          selectedDay = 0;
+          refresh();
+          alert('⚠️ The selected day has been disabled by admin. Please select a new day.');
+        }
+      }
+    } catch(e) {
+      console.warn('loadDaySettings failed, showing all days', e);
+      const prevVal = sel.value;
+      const days = [['1','Day 1 · July 9 (Thu)'],['2','Day 2 · July 10 (Fri)'],['3','Day 3 · July 11 (Sat)']];
+      [...sel.options].forEach(o => { if (o.value !== '0') o.remove(); });
+      days.forEach(([v,l]) => { const o = document.createElement('option'); o.value=v; o.textContent=l; sel.appendChild(o); });
+      if (prevVal && prevVal !== '0') sel.value = prevVal;
+    }
+  }
+
+  // Reads now use Apps Script doGet — instant, no CSV cache delay
+
+  const CLASS_EMOJI = {
+    'Pre-K':'🎈','Kindergarten':'🌟','1st Grade':'📚','2nd Grade':'✏️',
+    '3rd Grade':'🚀','4th Grade':'⚽','5th Grade':'🔥','6th Grade':'🎨',
+    '7th Grade':'👑','8th Grade':'🏆'
+  };
+
+  let selectedDay   = 0;
+  let selectedClass = '';
+  let classKids     = []; // checked-in kids for this class+day
+  let checkoutMap   = {}; // childName -> checkout record
+
+  /* ── DETECT EMBED MODE (inside Command Center iframe) ── */
+  var _isEmbed = false;
+  var _urlParams = new URLSearchParams(window.location.search);
+  if (_urlParams.get('embed') === '1') {
+    _isEmbed = true;
+  }
+  // Inject embed CSS — compact toolbar: hide branding, center controls
+  (function() {
+    var s = document.createElement('style');
+    s.textContent = _isEmbed
+      ? '.header-top { display: none !important; }' +
+        '.header { padding: 8px 16px; background: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%); }' +
+        '.selectors { justify-content: center; align-items: center; margin-top: 0; }' +
+        '.pin-screen { display: none !important; }' +
+        '@media(max-width:480px) { .selectors { gap: 6px; } .co-drop { font-size: .78rem; padding: 7px 14px; min-width: 130px; } .display-mode-toggle { font-size: .7rem; padding: 4px 10px; } }'
+      : '';
+    document.head.appendChild(s);
+  })();
+
+  /* ── AUTH — token from URL param (embed) or sessionStorage (shared Command Center session) ── */
+  function loadPIN() {
+    // 1. Check URL param token (embed mode from Command Center)
+    var tokenFromUrl = _urlParams.get('token');
+    // 2. Check shared session token (direct access while logged into Command Center)
+    var tokenFromSession = sessionStorage.getItem('vbs_token');
+    // 3. Legacy: check old checkout-specific token
+    var tokenLegacy = sessionStorage.getItem('vbs_checkout_token');
+
+    var tokenToTry = tokenFromUrl || tokenFromSession || tokenLegacy;
+    var savedUser   = sessionStorage.getItem('vbs_checkout_user') || sessionStorage.getItem('vbs_dash_user');
+    var savedGroups = sessionStorage.getItem('vbs_checkout_groups');
+    if (savedUser)   { try { currentUser = JSON.parse(savedUser); } catch(e) {} }
+    if (savedGroups) { try { userGroups = JSON.parse(savedGroups); } catch(e) {} }
+
+    if (tokenToTry) {
+      fetch(SCRIPT_URL + '?action=validateToken&token=' + encodeURIComponent(tokenToTry) + '&t=' + Date.now())
+        .then(function(r) { return r.json(); })
+        .then(function(json) {
+          if (json.status === 'ok' && json.user.panels && json.user.panels.includes('checkout')) {
+            PIN = tokenToTry;
+            currentUser = { username: json.user.username, display_name: json.user.display_name || json.user.username };
+            userGroups = json.user.groups || [];
+            sessionStorage.setItem('vbs_checkout_groups', JSON.stringify(userGroups));
+            document.getElementById('pin-screen').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            applyGroupFilter();
+            if (!_isEmbed) showUserHeader();
+            if (!_isEmbed) resetIdleTimer();
+            // Load day settings NOW (after PIN is set so token auth works)
+            loadDaySettings();
+            setInterval(loadDaySettings, 30000);
+          } else {
+            _authFailed();
+          }
+        }).catch(function() {
+          _authFailed();
+        });
+    } else {
+      _authFailed();
+    }
+  }
+
+  function _authFailed() {
+    if (_isEmbed) {
+      document.getElementById('pin-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      document.querySelector('.main').innerHTML =
+        '<div style="text-align:center;padding:60px 24px">' +
+          '<div style="font-size:3rem;margin-bottom:12px">🔒</div>' +
+          '<div style="font-family:Fredoka One,cursive;font-size:1.3rem;color:#1A2744;margin-bottom:8px">Session Expired</div>' +
+          '<div style="font-size:.85rem;color:#7A8BAD">Please log out and log back in to the Command Center.</div>' +
+        '</div>';
+      return;
+    }
+    // Direct URL access without valid token — redirect to Command Center
+    window.location.href = 'index.html';
+  }
+
+  // doLogin redirects to Command Center
+  async function doLogin() {
+    window.location.href = 'index.html';
+  }
+
+  function setDayMobile(d) {
+    selectedDay = d;
+    if (!d) return;
+    refresh();
+  }
+
+  function setClassMobile(cls) {
+    selectedClass = cls;
+    if (!cls) return;
+    refresh();
+  }
+
+  const DAY_BTNS   = ['Day 1','Day 2','Day 3'];
+  const CLASS_BTNS = ['Pre-K','Kindergarten','1st','2nd','3rd','4th','5th','6th','7th','8th'];
+
+  function setDay(d, btn) {
+    selectedDay = d;
+    // Only deactivate other day buttons — never touch class buttons
+    document.querySelectorAll('.sel-btn').forEach(b => {
+      if (DAY_BTNS.some(x => b.textContent.trim() === x)) b.classList.remove('active');
+    });
+    btn.classList.add('active');
+    refresh();
+  }
+
+  function setClass(cls, btn) {
+    selectedClass = cls;
+    // Only deactivate other class buttons — never touch day buttons
+    document.querySelectorAll('.sel-btn').forEach(b => {
+      if (CLASS_BTNS.some(x => b.textContent.trim().includes(x))) b.classList.remove('active');
+    });
+    btn.classList.add('active');
+    refresh();
+  }
+
+  let _refreshInterval = null;
+
+  function refresh() {
+    const hasAll = selectedDay && selectedClass;
+    document.getElementById('sel-warn').style.display     = hasAll ? 'none'  : 'block';
+    document.getElementById('teacher-card').style.display = hasAll ? 'block' : 'none';
+    document.getElementById('kids-card').style.display    = hasAll ? 'block' : 'none';
+    if (!hasAll) {
+      if (_refreshInterval) { clearInterval(_refreshInterval); _refreshInterval = null; }
+      return;
+    }
+    document.getElementById('context-label').textContent =
+      'Day ' + selectedDay + ' · ' + selectedClass;
+    const classLabel = CLASS_OPTIONS.find(o => o.value === selectedClass);
+    document.getElementById('class-title').textContent =
+      classLabel ? classLabel.label : ((CLASS_EMOJI[selectedClass] || '') + ' ' + selectedClass);
+    loadClassData();
+    if (_refreshInterval) clearInterval(_refreshInterval);
+    _refreshInterval = setInterval(loadClassData, 15000);
+  }
+
+  /* ── CSV PARSER ── */
+  function parseCSV(text) {
+    const lines = text.trim().split('\n');
+    const headers = splitLine(lines[0]).map(h => h.trim().replace(/^"|"$/g, ''));
+    return lines.slice(1).filter(l => l.trim()).map(line => {
+      const vals = splitLine(line);
+      const obj = {};
+      headers.forEach((h, i) => obj[h] = (vals[i] || '').trim().replace(/^"|"$/g, ''));
+      return obj;
+    });
+  }
+  function splitLine(line) {
+    const r = []; let c = '', q = false;
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === '"') { q = !q; }
+      else if (line[i] === ',' && !q) { r.push(c); c = ''; }
+      else c += line[i];
+    }
+    r.push(c); return r;
+  }
+
+  let _lastDay = 0, _lastClass = '';
+
+  async function loadClassData() {
+    if (!selectedDay || !selectedClass) { renderDemoEmpty(); return; }
+
+    // Reset state on selection change + show loading immediately
+    const selectionChanged = (_lastDay !== selectedDay || _lastClass !== selectedClass);
+    if (selectionChanged) {
+      checkoutMap  = {};
+      classKids    = [];
+      _lastDay     = selectedDay;
+      _lastClass   = selectedClass;
+      const srch = document.getElementById('class-search');
+      if (srch) srch.value = '';
+      showLoading();
+    }
+
+    try {
+      const url  = SCRIPT_URL + '?action=read&secret=' + encodeURIComponent(PIN) + '&day=' + selectedDay + '&t=' + Date.now();
+      const res  = await fetch(url);
+      const json = await res.json();
+      if (checkAuthResponse(json)) return;
+      if (json.status !== 'ok') { renderDemoEmpty(); return; }
+
+      // Map MySQL snake_case to camelCase
+      const mapped = json.data.map(r => ({
+        Id:           r.id,
+        ChildName:    r.child_name,
+        ClassName:    r.class_name,
+        Grade:        r.grade,
+        Parent:       r.parent,
+        Phone:        r.phone,
+        Allergies:    r.allergies,
+        CheckinTime:  r.checkin_time  || '',
+        CheckoutTime: r.checkout_time || '',
+        CheckinBy:    r.checkin_by,
+        CheckoutBy:   r.checkout_by,
+        LanyardBack:  r.lanyard_back,
+        EarlyReason:  r.early_checkout_reason || '',
+        Day:          r.day
+      }));
+      // Deduplicate by ChildName — keep only the record with the highest DB id per child.
+      // This correctly handles re-entry (multiple rows same child same day).
+      // Cannot rely on array order since checkin_time is stored as a string (e.g. "9:26 PM")
+      // which sorts incorrectly as text ("9" > "10").
+      const latestByName = {};
+      mapped.forEach(r => {
+        if (!latestByName[r.ChildName] || r.Id > latestByName[r.ChildName].Id) {
+          latestByName[r.ChildName] = r;
+        }
+      });
+      const deduped = Object.values(latestByName);
+
+      const groupClasses = CLASS_GROUP_MAP[selectedClass];
+      classKids = deduped.filter(r => groupClasses
+        ? groupClasses.indexOf(r.ClassName) !== -1
+        : r.ClassName === selectedClass);
+
+      const freshCheckouts = {};
+      deduped.filter(r => r.CheckoutTime && r.CheckoutTime.trim() !== '').forEach(r => {
+        freshCheckouts[r.ChildName] = r;
+      });
+      // Trust DB completely — latest record per child is source of truth.
+      // Never restore stale optimistic checkouts as they cause re-entry kids to show as Out.
+      checkoutMap = freshCheckouts;
+
+      renderKids();
+    } catch(e) {
+      console.error(e);
+      document.getElementById('kids-list').innerHTML =
+        '<div class="empty-state"><div class="empty-icon">⚠️</div>' +
+        '<div class="empty-title">Failed to load</div>' +
+        '<div class="empty-sub">Check your connection and try refreshing</div></div>';
+    }
+  }
+
+  function filterKidsList(query) {
+    const q = query.trim().toLowerCase();
+    const items = document.querySelectorAll('#kids-list .kid-row');
+    let shown = 0;
+    items.forEach(function(row) {
+      const name = (row.dataset.name || '').toLowerCase();
+      const match = !q || name.includes(q);
+      row.style.display = match ? '' : 'none';
+      if (match) shown++;
+    });
+    // Update badge count
+    document.getElementById('class-badge').textContent = shown + ' kid' + (shown !== 1 ? 's' : '');
+  }
+
+  function showLoading() {
+    document.getElementById('kids-list').innerHTML =
+      '<div class="empty-state">' +
+        '<div style="font-size:2.5rem;animation:spin .8s linear infinite;display:inline-block">⏳</div>' +
+        '<div class="empty-title" style="color:var(--primary);margin-top:10px">Loading ' + selectedClass + '…</div>' +
+        '<div class="empty-sub">Fetching from Google Sheets</div>' +
+      '</div>';
+    document.getElementById('class-badge').textContent = '—';
+    ['cnt-total','cnt-out','cnt-remain'].forEach(id => document.getElementById(id).textContent = '—');
+  }
+
+  function renderDemoEmpty() {
+    document.getElementById('kids-list').innerHTML =
+      '<div class="empty-state"><div class="empty-icon">📋</div>' +
+      '<div class="empty-title">No check-ins yet</div>' +
+      '<div class="empty-sub">Kids checked in at the entrance will appear here</div></div>';
+    document.getElementById('class-badge').textContent = '0 kids';
+    ['cnt-total','cnt-out','cnt-remain'].forEach(id => document.getElementById(id).textContent = '0');
+  }
+
+  function renderKids() {
+    const total   = classKids.length;
+    const outCnt  = classKids.filter(k => checkoutMap[k.ChildName]).length;
+    const remain  = total - outCnt;
+    document.getElementById('class-badge').textContent  = total + ' kid' + (total !== 1 ? 's' : '');
+    document.getElementById('cnt-total').textContent   = total;
+    document.getElementById('cnt-out').textContent     = outCnt;
+    document.getElementById('cnt-remain').textContent  = remain;
+
+    if (!total) { renderDemoEmpty(); return; }
+
+    // Sort: not checked out first
+    const sorted = [...classKids].sort((a,b) => {
+      const aOut = !!checkoutMap[a.ChildName];
+      const bOut = !!checkoutMap[b.ChildName];
+      return aOut - bOut;
+    });
+
+    document.getElementById('kids-list').innerHTML = sorted.map(k => {
+      const isOut = !!checkoutMap[k.ChildName];
+      const emoji = CLASS_EMOJI[k.ClassName] || '🎒';
+      const allergyHtml = k.Allergies && k.Allergies !== 'None'
+        ? '<span class="kid-allergy">⚠️ ' + k.Allergies + '</span>' : '';
+      const checkinHtml = k.CheckinTime
+        ? '<span class="kid-checkin-time">✅ Checked in at ' + k.CheckinTime + '</span>' : '';
+
+      if (isOut) {
+        const rec = checkoutMap[k.ChildName];
+        const earlyBadge = rec.EarlyReason
+          ? '<div style="margin-top:4px;font-size:.7rem;background:#FEF3C7;color:#92400E;border:1px solid #FDE68A;border-radius:6px;padding:2px 8px;font-weight:800;display:inline-block">⏰ Early: ' + rec.EarlyReason + '</div>'
+          : '';
+        return '<div class="kid-row checked-out" data-name="' + k.ChildName.toLowerCase() + '">' +
+          '<div class="kid-avatar">' + emoji + '</div>' +
+          '<div class="kid-info">' +
+            '<div class="kid-name">' + k.ChildName + '</div>' +
+            '<div class="kid-meta">👨‍👩‍👧 ' + k.Parent + (k.Phone ? ' · 📞 ' + k.Phone : '') + '</div>' +
+            (allergyHtml ? '<div>' + allergyHtml + '</div>' : '') +
+            (earlyBadge  ? '<div>' + earlyBadge  + '</div>' : '') +
+          '</div>' +
+          '<div class="out-badge">✅ Out<span class="out-time">' + formatTime(rec.CheckoutTime) + '</span></div>' +
+        '</div>';
+      }
+
+      return '<div class="kid-row" data-name="' + k.ChildName.toLowerCase() + '" id="row-' + k.ChildName.replace(/\s/g,'_') + '">' +
+        '<div class="kid-avatar">' + emoji + '</div>' +
+        '<div class="kid-info">' +
+          '<div class="kid-name">' + k.ChildName + '</div>' +
+          '<div class="kid-meta">👨‍👩‍👧 ' + k.Parent + (k.Phone ? ' · 📞 ' + k.Phone : '') + '</div>' +
+          (allergyHtml ? '<div>' + allergyHtml + '</div>' : '') +
+          (checkinHtml ? '<div>' + checkinHtml + '</div>' : '') +
+        '</div>' +
+        '<button class="checkout-btn" onclick="checkoutKid(' + JSON.stringify(k).replace(/"/g,"'") + ')">Check Out 🏁</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  // Format time — handles both "4:22 PM" strings and ugly Date strings
+  function formatTime(val) {
+    if (!val) return '';
+    // If it's already a clean time string like "4:22 PM", return as-is
+    if (/^\d{1,2}:\d{2}\s?(AM|PM)$/i.test(val.trim())) return val.trim();
+    // Otherwise try to parse as Date
+    try {
+      const d = new Date(val);
+      if (!isNaN(d.getTime())) {
+        const hrs  = d.getHours();
+        const mins = String(d.getMinutes()).padStart(2, '0');
+        const ampm = hrs >= 12 ? 'PM' : 'AM';
+        return (hrs % 12 || 12) + ':' + mins + ' ' + ampm;
+      }
+    } catch(e) {}
+    return val;
+  }
+
+  let _pendingCheckout = null;
+
+  function checkoutKid(kid) {
+    _pendingCheckout = kid;
+    document.getElementById('co-name').textContent = kid.ChildName;
+    document.getElementById('co-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLanyardModal() {
+    document.getElementById('co-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+    _pendingCheckout = null;
+  }
+
+  /* ── Check if current time is before 3:00 PM ── */
+  function isEarlyCheckout() {
+    const now = new Date();
+    return now.getHours() < 15; // before 15:00 = early
+  }
+
+  async function confirmCheckout() {
+    if (!_pendingCheckout) return;
+    const kid = _pendingCheckout;
+    closeLanyardModal();
+
+    // If before 3 PM, ask for early checkout reason before proceeding
+    if (isEarlyCheckout()) {
+      openEarlyModal(kid);
+      return;
+    }
+
+    await doCheckout(kid, '');
+  }
+
+  /* ── EARLY CHECKOUT MODAL ── */
+  function openEarlyModal(kid) {
+    _pendingCheckout = kid; // keep reference
+    const now = new Date();
+    const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('early-sub').textContent =
+      kid.ChildName + ' is being checked out at ' + time + ', before 3:00 PM. Please provide a reason.';
+    // Reset form state
+    document.querySelectorAll('input[name="early_reason"]').forEach(function(r) { r.checked = false; });
+    document.getElementById('early-other-wrap').style.display = 'none';
+    document.getElementById('early-other-text').value = '';
+    document.getElementById('early-reason-err').textContent = '';
+    // Wire up radio change to show/hide "Other" textarea
+    document.querySelectorAll('input[name="early_reason"]').forEach(function(r) {
+      r.onchange = function() {
+        document.getElementById('early-other-wrap').style.display = this.value === 'Other' ? 'block' : 'none';
+        document.getElementById('early-reason-err').textContent = '';
+        // Highlight selected label
+        document.querySelectorAll('#early-reason-options label').forEach(function(l) {
+          l.style.borderColor = l.querySelector('input').checked ? '#D97706' : '#E2E8F0';
+          l.style.background  = l.querySelector('input').checked ? '#FFFBEB' : '';
+        });
+      };
+    });
+    document.getElementById('early-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeEarlyModal() {
+    document.getElementById('early-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+    _pendingCheckout = null;
+  }
+
+  async function submitEarlyCheckout() {
+    const selected = document.querySelector('input[name="early_reason"]:checked');
+    const errEl = document.getElementById('early-reason-err');
+    if (!selected) {
+      errEl.textContent = '⚠️ Please select a reason before confirming.';
+      return;
+    }
+    let reason = selected.value;
+    if (reason === 'Other') {
+      const custom = document.getElementById('early-other-text').value.trim();
+      if (!custom) { errEl.textContent = '⚠️ Please describe the reason.'; return; }
+      reason = 'Other: ' + custom;
+    }
+    const kid = _pendingCheckout;
+    closeEarlyModal();
+    await doCheckout(kid, reason);
+  }
+
+  /* ── Core checkout — shared by normal and early paths ── */
+  async function doCheckout(kid, earlyReason) {
+    const teacherName = currentUser.display_name;
+    const now  = new Date();
+    const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    const payload = {
+      action:              'checkout',
+      secret:              PIN,
+      day:                 selectedDay,
+      childName:           kid.ChildName,
+      className:           kid.ClassName,
+      checkoutTime:        time,
+      checkoutBy:          teacherName,
+      lanyardBack:         'Yes',
+      earlyCheckoutReason: earlyReason || ''
+    };
+
+    // Optimistic UI update
+    checkoutMap[kid.ChildName] = { ...kid, CheckoutTime: time, CheckoutBy: teacherName };
+    renderKids();
+    showToast(kid.ChildName, time, teacherName, earlyReason);
+
+    try {
+      const res  = await fetch(SCRIPT_URL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+      const json = await res.json();
+      if (checkAuthResponse(json)) return;
+      if (json.status !== 'ok') throw new Error(json.message || 'Server error');
+    } catch(e) {
+      console.error('Checkout write failed:', e);
+      delete checkoutMap[kid.ChildName];
+      renderKids();
+      const t = document.getElementById('toast');
+      document.getElementById('toast-name').textContent   = '⚠️ Checkout failed!';
+      document.getElementById('toast-detail').textContent = 'Could not save. Please try again.';
+      t.style.background = '#EF4444';
+      t.classList.add('show');
+      setTimeout(() => { t.classList.remove('show'); t.style.background = ''; }, 4000);
+    }
+  }
+
+  async function manualRefresh() {
+    if (!selectedDay || !selectedClass) {
+      refresh();
+      return;
+    }
+    const btn = document.getElementById('refresh-btn');
+    btn.classList.add('spinning');
+    btn.disabled = true;
+    await loadClassData();
+    btn.classList.remove('spinning');
+    btn.disabled = false;
+    const label = document.getElementById('context-label');
+    const base  = selectedDay && selectedClass ? 'Day ' + selectedDay + ' · ' + selectedClass : 'Select day & class';
+    label.textContent = base + ' · Updated ' + new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  }
+
+  function showToast(name, time, teacher, earlyReason) {
+    document.getElementById('toast-name').textContent   = '🏁 ' + name + ' checked out!';
+    const detail = earlyReason
+      ? 'By ' + teacher + ' · ' + time + ' · ⏰ Early: ' + earlyReason
+      : 'By ' + teacher + ' · ' + time + ' · 🏷️ Lanyard returned';
+    document.getElementById('toast-detail').textContent = detail;
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3500);
+  }
+  function showFilterModal(filter) {
+    if (!classKids.length) return;
+    const titles = { all: 'Arrived Today', out: 'Gone Home ✅', inside: 'Still Inside 🏠' };
+    document.getElementById('fm-title').textContent = titles[filter];
+
+    let kids = classKids;
+    if (filter === 'out')    kids = classKids.filter(k =>  checkoutMap[k.ChildName]);
+    if (filter === 'inside') kids = classKids.filter(k => !checkoutMap[k.ChildName]);
+
+    if (!kids.length) {
+      document.getElementById('fm-list').innerHTML = '<div class="fm-empty">No kids in this category</div>';
+    } else {
+      document.getElementById('fm-list').innerHTML = kids.map(k => {
+        const emoji  = CLASS_EMOJI[k.ClassName] || '🎒';
+        const isOut  = !!checkoutMap[k.ChildName];
+        const rec    = checkoutMap[k.ChildName];
+        const badge  = isOut
+          ? '<div class="fm-badge-out">✅ ' + formatTime(rec.CheckoutTime) + '</div>'
+          : '<div class="fm-badge-in">🏠 Inside</div>';
+        return '<div class="fm-row">' +
+          '<div class="fm-avatar">' + emoji + '</div>' +
+          '<div style="flex:1;min-width:0"><div class="fm-name">' + k.ChildName + '</div>' +
+          '<div class="fm-meta">👨‍👩‍👧 ' + k.Parent + (k.Phone ? ' · 📞 ' + k.Phone : '') + '</div>' +
+          (k.Allergies && k.Allergies !== 'None' ? '<div style="margin-top:3px"><span class="kid-allergy">⚠️ ' + k.Allergies + '</span></div>' : '') +
+          '</div>' +
+          badge + '</div>';
+      }).join('');
+    }
+
+    document.getElementById('fm-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeFilterModal() {
+    document.getElementById('fm-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  document.getElementById('fm-overlay').addEventListener('click', function(e) {
+    if (e.target === this) closeFilterModal();
+  });
+
+  loadPIN();
+  initCheckoutToggle();
+
+  /* ── AUTH FAILURE HANDLER ── */
+  function checkAuthResponse(json) {
+    if (json && json.status === 'error' && json.message === 'Unauthorized') {
+      doLogout();
+      return true;
+    }
+    return false;
+  }
+
+  /* ── LOGOUT ── */
+  async function doLogout() {
+    // If embedded, tell parent to logout
+    if (_isEmbed) {
+      try { window.parent.doDashLogout(); } catch(e) {}
+      return;
+    }
+    // Direct access — redirect to Command Center
+    PIN = null;
+    stopIdleTimer();
+    window.location.href = 'index.html';
+  }
+
+  function showUserHeader() {
+    const el = document.getElementById('user-display');
+    const lbl = document.getElementById('user-name-label');
+    if (el && lbl) {
+      lbl.textContent = '👤 ' + (currentUser.display_name || currentUser.username);
+      el.style.display = 'flex';
+    }
+  }
+
+  /* ── IDLE TIMEOUT (15 min) ── */
+  const IDLE_TIMEOUT = 15 * 60 * 1000;
+  const WARN_BEFORE  = 60 * 1000;
+  let idleTimer      = null;
+  let countdownTimer = null;
+  let idleCountdown  = 60;
+
+  function resetIdleTimer() {
+    clearTimeout(idleTimer);
+    clearInterval(countdownTimer);
+    document.getElementById('idle-warning').style.display = 'none';
+    idleCountdown = 60;
+    if (PIN) idleTimer = setTimeout(showIdleWarning, IDLE_TIMEOUT - WARN_BEFORE);
+  }
+
+  function showIdleWarning() {
+    if (!PIN) return;
+    document.getElementById('idle-warning').style.display = 'flex';
+    idleCountdown = 60;
+    document.getElementById('idle-countdown').textContent = idleCountdown;
+    countdownTimer = setInterval(function() {
+      idleCountdown--;
+      document.getElementById('idle-countdown').textContent = idleCountdown;
+      if (idleCountdown <= 0) { clearInterval(countdownTimer); doLogout(); }
+    }, 1000);
+  }
+
+  function stopIdleTimer() {
+    clearTimeout(idleTimer);
+    clearInterval(countdownTimer);
+    document.getElementById('idle-warning').style.display = 'none';
+  }
+
+  ['mousemove','keydown','mousedown','touchstart','scroll'].forEach(function(evt) {
+    document.addEventListener(evt, resetIdleTimer, { passive: true });
+  });
+
+</script>
+  <!-- IDLE TIMEOUT WARNING -->
+  <div id="idle-warning" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:white;border-radius:20px;padding:32px 28px;text-align:center;max-width:340px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+      <div style="font-size:2.5rem;margin-bottom:12px">⏰</div>
+      <div style="font-family:Fredoka One,cursive;font-size:1.3rem;color:#1A2744;margin-bottom:8px">Still there?</div>
+      <div style="font-size:.85rem;color:#64748b;margin-bottom:20px">You'll be logged out in <span id="idle-countdown" style="font-weight:800;color:#EF4444">60</span> seconds due to inactivity.</div>
+      <button onclick="resetIdleTimer()"
+        style="background:#1A2744;color:white;border:none;border-radius:10px;padding:12px 32px;font-size:.9rem;font-weight:800;cursor:pointer;width:100%">
+        ✅ I'm still here
+      </button>
+    </div>
+  </div>
+
+</body>
+</html>

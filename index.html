@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VBS 2026 — Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<!-- Shared styles (colours, layout, both tabs) -->
+<link rel="stylesheet" href="shared.css">
+<style>
+  /* ── Command Center mobile responsive ── */
+  @media (max-width: 640px) {
+    .site-header {
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 12px 16px;
+      gap: 8px;
+    }
+    .site-title { font-size: 1.1rem; }
+    .site-sub { font-size: .68rem; }
+    .header-right {
+      flex-shrink: 1;
+      flex-wrap: wrap;
+      gap: 6px;
+      width: 100%;
+    }
+    .ts { font-size: .65rem; }
+    .btn-refresh { font-size: .7rem; padding: 5px 10px; }
+    #dash-user-display { font-size: .68rem; }
+    #dash-user-display button { font-size: .62rem !important; padding: 2px 7px !important; }
+
+    /* Tab bar: scroll horizontally on mobile */
+    .tab-bar {
+      padding: 0 12px;
+      gap: 2px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .tab-btn {
+      font-size: .75rem;
+      padding: 10px 12px;
+      white-space: nowrap;
+    }
+  }
+
+  @media (max-width: 380px) {
+    .site-title { font-size: .95rem; }
+    .header-right { gap: 4px; }
+    .live-badge { font-size: .58rem; padding: 3px 7px; }
+    .tab-btn { font-size: .7rem; padding: 8px 10px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ─── LOGIN SCREEN ──────────────────── -->
+<div id="login-screen" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1A2744 0%,#2A3F7A 100%)">
+  <div style="background:white;border-radius:24px;padding:40px 36px;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+    <div style="font-size:3rem;margin-bottom:12px">⛪</div>
+    <div style="font-family:'Fredoka One',cursive;font-size:1.6rem;color:#1A2744;margin-bottom:4px">VBS 2026</div>
+    <div style="color:#7A8BAD;font-size:.85rem;margin-bottom:24px">Command Center · Sign in to continue</div>
+    <input id="login-username" type="text" placeholder="Username" autocomplete="username"
+      style="width:100%;padding:12px 16px;font-size:1rem;text-align:left;border:2px solid #E2E8F0;border-radius:12px;font-family:'Nunito',sans-serif;font-weight:600;outline:none;margin-bottom:10px;box-sizing:border-box"
+      onkeydown="if(event.key==='Enter')document.getElementById('login-password').focus()">
+    <input id="login-password" type="password" placeholder="Password" autocomplete="current-password"
+      style="width:100%;padding:12px 16px;font-size:1rem;text-align:left;border:2px solid #E2E8F0;border-radius:12px;font-family:'Nunito',sans-serif;font-weight:600;outline:none;margin-bottom:10px;box-sizing:border-box"
+      onkeydown="if(event.key==='Enter')doDashLogin()">
+    <button id="login-btn" onclick="doDashLogin()"
+      style="margin-top:16px;width:100%;padding:14px;background:#1A2744;color:white;border:none;border-radius:12px;font-size:1rem;font-weight:800;font-family:'Nunito',sans-serif;cursor:pointer">
+      Sign In →
+    </button>
+    <div id="login-err" style="color:#EF4444;font-size:.82rem;margin-top:10px;font-weight:700;min-height:18px"></div>
+  </div>
+</div>
+
+<!-- ─── MAIN APP (hidden until login) ──── -->
+<div id="main-app" style="display:none">
+
+<!-- ─── HEADER ─────────────────────────── -->
+<header class="site-header">
+  <div>
+    <div class="site-title">⛪ PYPA VBS 2026 Command Center</div>
+    <div class="site-sub">India Christian Assembly NJ · Live Registration &amp; Volunteer Monitor</div>
+  </div>
+  <div class="header-right">
+    <span class="ts" id="ts"></span>
+    <span class="live-badge">LIVE</span>
+    <span id="dash-user-display" style="display:none;align-items:center;gap:6px">
+      <span id="dash-user-name" style="font-size:.72rem;color:rgba(255,255,255,.8);font-weight:700"></span>
+      <button onclick="doDashLogout()"
+        style="background:rgba(239,68,68,.3);border:1px solid rgba(239,68,68,.5);border-radius:6px;padding:2px 9px;color:white;font-size:.68rem;font-weight:800;cursor:pointer"
+        onmouseover="this.style.background='rgba(239,68,68,.55)'"
+        onmouseout="this.style.background='rgba(239,68,68,.3)'">
+        🚪 Logout
+      </button>
+    </span>
+    <button class="btn-refresh" onclick="refreshAll()">↻ Refresh</button>
+  </div>
+</header>
+
+<!-- ─── TAB BAR (dynamically populated) ── -->
+<nav class="tab-bar" id="tab-bar"></nav>
+
+<!-- ─── KIDS PANEL ─────────────────────── -->
+<div id="panel-kids" class="panel">
+  <div class="page">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+      <button class="display-mode-toggle" onclick="toggleDisplayMode()" id="kids-dm-toggle">
+        <span class="dm-opt dm-active">📋 Grade</span><span class="dm-sep">|</span><span class="dm-opt">🏫 Class</span>
+      </button>
+    </div>
+    <div id="k-stats" class="stat-row">
+      <div class="loading-box" style="grid-column:1/-1"><span class="spin">⏳</span> Loading kids data…</div>
+    </div>
+    <div id="k-tshirt"></div>
+    <div id="k-content"></div>
+  </div>
+</div>
+
+<!-- ─── VOLUNTEER PANEL ────────────────── -->
+<div id="panel-vol" class="panel">
+  <div class="page">
+    <div id="v-stats" class="stat-row five">
+      <div class="loading-box" style="grid-column:1/-1"><span class="spin">⏳</span> Loading volunteer data…</div>
+    </div>
+    <div id="v-content"></div>
+  </div>
+</div>
+
+<!-- ─── TEAM MODAL (shared overlay, populated by volunteers.js) ── -->
+<!-- ─── LIVE ATTENDANCE PANEL ──────────── -->
+<div id="panel-attendance" class="panel">
+
+  <!-- MAIN ATTENDANCE VIEW (no separate PIN — page login handles auth) -->
+  <div id="att-app">
+    <div class="page">
+
+      <!-- Title + day + toggle -->
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">
+        <div>
+          <div style="font-family:'Fredoka One',cursive;font-size:1.6rem;color:var(--navy)">📊 Live Attendance</div>
+          <div id="att-day-label" style="font-size:.82rem;color:var(--muted);font-weight:700;margin-top:3px">Detecting active day…</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="display-mode-toggle" onclick="toggleDisplayMode();attRenderGrid();renderCiRows()" id="att-dm-toggle">
+            <span class="dm-opt dm-active">📋 Grade</span><span class="dm-sep">|</span><span class="dm-opt">🏫 Class</span>
+          </button>
+          <button class="btn-refresh" onclick="attRefresh()" id="att-refresh-btn">↻ Refresh</button>
+        </div>
+      </div>
+
+      <!-- Stat pills -->
+      <div id="att-stats" class="stat-row" style="margin-bottom:20px">
+        <div class="loading-box" style="grid-column:1/-1"><span class="spin">⏳</span> Loading…</div>
+      </div>
+
+      <!-- Class grid -->
+      <div class="card" style="margin-bottom:18px">
+        <div class="card-title" id="att-grid-title">📋 By Grade</div>
+        <div id="att-class-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:12px"></div>
+      </div>
+
+      <!-- Checked-in vs Registered -->
+      <div class="card" style="margin-bottom:18px">
+        <div class="card-title" style="margin-bottom:10px">📋 Checked-in vs Registered</div>
+        <div id="ci-status-rows"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Filter modal (reuse same fm-overlay structure) -->
+  <div class="att-fm-overlay" id="att-fm-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s">
+    <div class="att-fm-modal" id="att-fm-modal" style="background:white;border-radius:24px 24px 0 0;width:100%;max-width:680px;max-height:80vh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .3s cubic-bezier(.34,1.2,.64,1);overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:white;z-index:1">
+        <div style="font-family:'Fredoka One',cursive;font-size:1.3rem;color:var(--navy)" id="att-fm-title">Kids</div>
+        <button onclick="attCloseModal()" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--page-bg);font-size:1rem;cursor:pointer;font-weight:800">✕</button>
+      </div>
+      <div style="overflow-y:auto;padding:12px 16px 32px" id="att-fm-list"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ─── SCHEDULE PANEL ──────────────────── -->
+<div id="panel-schedule" class="panel">
+  <div class="page">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">
+      <div>
+        <div style="font-family:'Fredoka One',cursive;font-size:1.6rem;color:var(--navy)">📅 VBS Schedule</div>
+        <div style="font-size:.82rem;color:var(--muted);font-weight:700;margin-top:3px">India Christian Assembly NJ · July 9–11, 2026</div>
+      </div>
+      <button class="btn-refresh" onclick="loadSchedule()">↻ Refresh</button>
+    </div>
+    <div id="sched-content">
+      <div class="loading-box"><span class="spin">⏳</span> Click the Schedule tab to load…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── CHECK-IN IFRAME PANEL ──────────── -->
+<div id="panel-ci" class="panel">
+  <iframe id="iframe-checkin" src="" style="width:100%;border:none;height:calc(100vh - 95px)"></iframe>
+</div>
+
+<!-- ─── CHECK-OUT IFRAME PANEL ──────────── -->
+<div id="panel-co" class="panel">
+  <iframe id="iframe-checkout" src="" style="width:100%;border:none;height:calc(100vh - 95px)"></iframe>
+</div>
+
+<!-- ─── VOLUNTEER KIOSK IFRAME PANEL ──── -->
+<div id="panel-vol_attendance" class="panel">
+  <iframe id="iframe-vol-checkin" src="" style="width:100%;border:none;height:calc(100vh - 95px)"></iframe>
+</div>
+
+<div class="team-modal-overlay" id="team-modal-overlay" onclick="handleModalOverlayClick(event)">
+  <div class="team-modal" id="team-modal">
+    <div class="team-modal-head">
+      <div>
+        <div class="team-modal-title" id="team-modal-title"></div>
+        <div class="team-modal-meta" id="team-modal-meta"></div>
+      </div>
+      <button class="team-modal-close" onclick="closeTeamModal()" title="Close">✕</button>
+    </div>
+    <div class="team-modal-body" id="team-modal-body"></div>
+  </div>
+</div>
+
+</div><!-- /main-app -->
+
+<!-- IDLE TIMEOUT WARNING -->
+<div id="idle-warning" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:white;border-radius:20px;padding:32px 28px;text-align:center;max-width:340px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="font-size:2.5rem;margin-bottom:12px">⏰</div>
+    <div style="font-family:Fredoka One,cursive;font-size:1.3rem;color:#1A2744;margin-bottom:8px">Still there?</div>
+    <div style="font-size:.85rem;color:#64748b;margin-bottom:20px">You'll be logged out in <span id="idle-countdown" style="font-weight:800;color:#EF4444">60</span> seconds due to inactivity.</div>
+    <button onclick="resetIdleTimer()"
+      style="background:#1A2744;color:white;border:none;border-radius:10px;padding:12px 32px;font-size:.9rem;font-weight:800;cursor:pointer;width:100%">
+      ✅ I'm still here
+    </button>
+  </div>
+</div>
+
+<!-- ─── SCRIPTS (load order matters: shared → kids → volunteers → schedule) ── -->
+<script src="shared.js"></script>
+<script src="kids.js"></script>
+<script src="volunteers.js"></script>
+<script src="schedule.js"></script>
+<script>
+  /* ══════════════════════════════════════
+     DASHBOARD AUTH & STATE
+  ══════════════════════════════════════ */
+  const DASH_API = 'https://pypaonline.org/vbs/api.php';
+  let dashToken   = null;
+  let dashUser    = { username: '', display_name: '', panels: [], groups: [] };
+
+  /* ── LOGIN ── */
+  async function doDashLogin() {
+    const username = document.getElementById('login-username').value.trim();
+    const password = document.getElementById('login-password').value;
+    const btn = document.getElementById('login-btn');
+    const err = document.getElementById('login-err');
+    if (!username || !password) { err.textContent = '⚠️ Enter username and password.'; return; }
+    btn.disabled = true;
+    btn.textContent = '⏳ Signing in…';
+    err.textContent = '';
+    try {
+      const res  = await fetch(DASH_API, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ action: 'login', username, password })
+      });
+      const json = await res.json();
+      if (json.status === 'ok') {
+        dashToken = json.token;
+        dashUser  = {
+          username:     json.user.username,
+          display_name: json.user.display_name || json.user.username,
+          panels:       json.user.panels || [],
+          groups:       json.user.groups || []
+        };
+        sessionStorage.setItem('vbs_token', json.token);
+        sessionStorage.setItem('vbs_dash_user', JSON.stringify(dashUser));
+        showDashApp();
+      } else {
+        err.textContent = '❌ ' + (json.message || 'Incorrect username or password.');
+        document.getElementById('login-password').value = '';
+        btn.disabled = false;
+        btn.textContent = 'Sign In →';
+      }
+    } catch(e) {
+      err.textContent = '⚠️ Network error. Check connection.';
+      btn.disabled = false;
+      btn.textContent = 'Sign In →';
+    }
+  }
+
+  /* ── SHOW APP (after login or auto-login) ── */
+  function showDashApp() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-app').style.display = 'block';
+    // Show user in header
+    var el = document.getElementById('dash-user-display');
+    var lbl = document.getElementById('dash-user-name');
+    if (el && lbl) {
+      lbl.textContent = '👤 ' + (dashUser.display_name || dashUser.username);
+      el.style.display = 'flex';
+    }
+    buildTabBar();
+    refreshAll();
+    setInterval(refreshAll, 120000);
+    updateToggleBtn(document.getElementById('kids-dm-toggle'));
+    resetIdleTimer();
+  }
+
+  /* ── BUILD TAB BAR (only panels user has access to) ── */
+  function buildTabBar() {
+    var bar = document.getElementById('tab-bar');
+    if (!bar) return;
+    var allTabs = [
+      { panel: 'checkin',        tabId: 'ci',            label: '✅ Check-in' },
+      { panel: 'checkout',       tabId: 'co',            label: '🏁 Check-out' },
+      { panel: 'kids',           tabId: 'kids',          label: '🧒 Kids Registration' },
+      { panel: 'volunteers',     tabId: 'vol',           label: '🙋 Volunteers' },
+      { panel: 'attendance',     tabId: 'attendance',    label: '📊 Live Attendance' },
+      { panel: 'schedule',       tabId: 'schedule',      label: '📅 Schedule' },
+      { panel: 'vol_attendance', tabId: 'vol_attendance', label: '🙋 Vol Kiosk' }
+    ];
+    var panels = dashUser.panels || [];
+    var visibleTabs = allTabs.filter(function(t) { return panels.includes(t.panel); });
+    // Always hide all panels first
+    document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
+    if (!visibleTabs.length) {
+      bar.innerHTML = '<span style="color:#A8C4E8;font-size:.85rem;padding:14px 24px">No panels assigned. Contact admin.</span>';
+      return;
+    }
+    bar.innerHTML = visibleTabs.map(function(t, i) {
+      return '<button class="tab-btn' + (i === 0 ? ' active' : '') + '" onclick="switchTab(\'' + t.tabId + '\',this)">' + t.label + '</button>';
+    }).join('');
+    // Show first panel
+    var firstTab = visibleTabs[0];
+    var firstPanelId = firstTab.tabId === 'vol' ? 'panel-vol' : 'panel-' + firstTab.tabId;
+    var el = document.getElementById(firstPanelId);
+    if (el) el.classList.add('active');
+    // If first tab is an iframe, load it
+    if (firstTab.tabId === 'ci') loadIframe('checkin');
+    if (firstTab.tabId === 'co') loadIframe('checkout');
+    if (firstTab.tabId === 'vol_attendance') loadIframe('vol_attendance');
+  }
+
+  /* ── IFRAME LOADING — passes token via URL param ── */
+  var _iframeLoaded = { checkin: false, checkout: false, vol_attendance: false };
+  function loadIframe(type) {
+    if (_iframeLoaded[type]) return;
+    var iframe = type === 'checkin'        ? document.getElementById('iframe-checkin')
+               : type === 'checkout'       ? document.getElementById('iframe-checkout')
+               : type === 'vol_attendance' ? document.getElementById('iframe-vol-checkin')
+               : null;
+    if (!iframe) return;
+    var url = type === 'checkin'        ? 'checkin.html?embed=1&token='      + encodeURIComponent(dashToken)
+            : type === 'checkout'       ? 'checkout.html?embed=1&token='     + encodeURIComponent(dashToken)
+            : type === 'vol_attendance' ? 'vol_checkin.html?embed=1&token='  + encodeURIComponent(dashToken)
+            : '';
+    iframe.src = url;
+    _iframeLoaded[type] = true;
+  }
+
+  /* ── LOGOUT ── */
+  async function doDashLogout() {
+    if (dashToken) {
+      try { await fetch(DASH_API + '?action=logout&token=' + encodeURIComponent(dashToken)); } catch(e) {}
+    }
+    dashToken = null;
+    dashUser  = { username: '', display_name: '', panels: [], groups: [] };
+    sessionStorage.removeItem('vbs_token');
+    sessionStorage.removeItem('vbs_dash_user');
+    // Clear legacy tokens too
+    sessionStorage.removeItem('vbs_checkin_token');
+    sessionStorage.removeItem('vbs_checkout_token');
+    sessionStorage.removeItem('vbs_checkin_user');
+    sessionStorage.removeItem('vbs_checkout_user');
+    sessionStorage.removeItem('vbs_checkout_groups');
+    sessionStorage.removeItem('vbs_dashboard_pin');
+    // Reset iframe state so they reload fresh on next login
+    _iframeLoaded = { checkin: false, checkout: false, vol_attendance: false };
+    var ciFrame = document.getElementById('iframe-checkin');
+    var coFrame = document.getElementById('iframe-checkout');
+    var vcFrame = document.getElementById('iframe-vol-checkin');
+    if (ciFrame) ciFrame.src = '';
+    if (coFrame) coFrame.src = '';
+    if (vcFrame) vcFrame.src = '';
+    if (attInterval) { clearInterval(attInterval); attInterval = null; }
+    stopIdleTimer();
+    document.getElementById('main-app').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('login-err').textContent = '';
+    document.getElementById('login-username').value = '';
+    document.getElementById('login-password').value = '';
+    var btn = document.getElementById('login-btn');
+    btn.disabled = false;
+    btn.textContent = 'Sign In →';
+    document.getElementById('login-username').focus();
+    document.getElementById('dash-user-display').style.display = 'none';
+  }
+
+  /* ── AUTO-LOGIN from sessionStorage ── */
+  async function dashAutoLogin() {
+    var savedToken = sessionStorage.getItem('vbs_token');
+    var savedUser  = sessionStorage.getItem('vbs_dash_user');
+    if (savedUser) { try { dashUser = JSON.parse(savedUser); } catch(e) {} }
+    if (savedToken) {
+      try {
+        var res  = await fetch(DASH_API + '?action=validateToken&token=' + encodeURIComponent(savedToken) + '&t=' + Date.now());
+        var json = await res.json();
+        if (json.status === 'ok') {
+          dashToken = savedToken;
+          dashUser  = {
+            username:     json.user.username,
+            display_name: json.user.display_name || json.user.username,
+            panels:       json.user.panels || [],
+            groups:       json.user.groups || []
+          };
+          sessionStorage.setItem('vbs_dash_user', JSON.stringify(dashUser));
+          showDashApp();
+          return;
+        }
+      } catch(e) {}
+      sessionStorage.removeItem('vbs_token');
+    }
+    document.getElementById('login-username').focus();
+  }
+  dashAutoLogin();
+
+  /* ── IDLE TIMEOUT (15 min) ── */
+  var IDLE_TIMEOUT  = 15 * 60 * 1000;
+  var WARN_BEFORE   = 60 * 1000;
+  var idleTimer       = null;
+  var countdownTimer  = null;
+  var idleCountdown   = 60;
+
+  function resetIdleTimer() {
+    clearTimeout(idleTimer);
+    clearInterval(countdownTimer);
+    document.getElementById('idle-warning').style.display = 'none';
+    idleCountdown = 60;
+    if (dashToken) {
+      idleTimer = setTimeout(showIdleWarning, IDLE_TIMEOUT - WARN_BEFORE);
+    }
+  }
+
+  function showIdleWarning() {
+    if (!dashToken) return;
+    document.getElementById('idle-warning').style.display = 'flex';
+    idleCountdown = 60;
+    document.getElementById('idle-countdown').textContent = idleCountdown;
+    countdownTimer = setInterval(function() {
+      idleCountdown--;
+      document.getElementById('idle-countdown').textContent = idleCountdown;
+      if (idleCountdown <= 0) {
+        clearInterval(countdownTimer);
+        doDashLogout();
+      }
+    }, 1000);
+  }
+
+  function stopIdleTimer() {
+    clearTimeout(idleTimer);
+    clearInterval(countdownTimer);
+    document.getElementById('idle-warning').style.display = 'none';
+  }
+
+  ['mousemove','keydown','mousedown','touchstart','scroll'].forEach(function(evt) {
+    document.addEventListener(evt, resetIdleTimer, { passive: true });
+  });
+
+  /* ── AUTH FAILURE HANDLER ── */
+  function checkDashAuthResponse(json) {
+    if (json && json.status === 'error' && json.message === 'Unauthorized') {
+      doDashLogout();
+      return true;
+    }
+    return false;
+  }
+
+  /* ══════════════════════════════════════
+     LIVE ATTENDANCE TAB
+  ══════════════════════════════════════ */
+  const ATT_API = DASH_API;
+  // attPIN is now the dashToken
+  var attPIN = null; // set after login
+  var attDay = 0;
+  var attCheckedIn = {};
+  var attInterval = null;
+
+  // Sync attPIN with dashToken
+  Object.defineProperty(window, '_attPIN', {
+    get: function() { return dashToken; }
+  });
+
+  const ATT_CLASS_EMOJI = {
+    'Pre-K':'🎈','Kindergarten':'🌟','1st Grade':'📚','2nd Grade':'✏️',
+    '3rd Grade':'🚀','4th Grade':'⚽','5th Grade':'🔥','6th Grade':'🎨',
+    '7th Grade':'👑','8th Grade':'🏆'
+  };
+  const ATT_CLASSES = [
+    {name:'Pre-K',  emoji:'🎈', key:'Pre-K'},
+    {name:'Kinder', emoji:'🌟', key:'Kindergarten'},
+    {name:'1st',    emoji:'📚', key:'1st Grade'},
+    {name:'2nd',    emoji:'✏️', key:'2nd Grade'},
+    {name:'3rd',    emoji:'🚀', key:'3rd Grade'},
+    {name:'4th',    emoji:'⚽', key:'4th Grade'},
+    {name:'5th',    emoji:'🔥', key:'5th Grade'},
+    {name:'6th',    emoji:'🎨', key:'6th Grade'},
+    {name:'7th',    emoji:'👑', key:'7th Grade'},
+    {name:'8th',    emoji:'🏆', key:'8th Grade'}
+  ];
+  const ATT_CLASS_GROUPS = [
+    {name:'Pre-K',       emoji:'🎈', key:'Pre-K',       keys:['Pre-K']},
+    {name:'Pre-Primary', emoji:'🎠', key:'Pre-Primary', keys:['Kindergarten','1st Grade','2nd Grade']},
+    {name:'Primary',     emoji:'📘', key:'Primary',     keys:['3rd Grade','4th Grade','5th Grade']},
+    {name:'Junior',      emoji:'🎓', key:'Junior',      keys:['6th Grade','7th Grade','8th Grade']}
+  ];
+  const ATT_GROUP_KEYS = {
+    'Pre-K':       ['Pre-K'],
+    'Pre-Primary': ['Kindergarten','1st Grade','2nd Grade'],
+    'Primary':     ['3rd Grade','4th Grade','5th Grade'],
+    'Junior':      ['6th Grade','7th Grade','8th Grade']
+  };
+
+  function attIsOut(r) { return r.checkout_time && String(r.checkout_time).trim() !== ''; }
+
+  /* ── Filter attendance by user's assigned groups ── */
+  function attFilterByGroups(records) {
+    var groups = dashUser.groups || [];
+    if (!groups.length) return records; // no filter = see all
+    var allowedClasses = [];
+    groups.forEach(function(g) {
+      var keys = ATT_GROUP_KEYS[g];
+      if (keys) keys.forEach(function(k) { if (allowedClasses.indexOf(k) === -1) allowedClasses.push(k); });
+    });
+    if (!allowedClasses.length) return records;
+    var filtered = {};
+    Object.keys(records).forEach(function(name) {
+      if (allowedClasses.indexOf(records[name].class_name) !== -1) filtered[name] = records[name];
+    });
+    return filtered;
+  }
+
+  async function attLoadDay() {
+    try {
+      const res  = await fetch(ATT_API + '?action=getSettings&token=' + encodeURIComponent(dashToken || '') + '&t=' + Date.now());
+      const json = await res.json();
+      const s    = json.settings || {};
+      for (let d = 3; d >= 1; d--) {
+        if (s['day' + d + '_enabled'] === '1') { attDay = d; return; }
+      }
+      attDay = 0;
+    } catch(e) { attDay = 0; }
+  }
+
+  async function attRefresh() {
+    if (!dashToken) return;
+    await attLoadDay();
+    const dayLabels = {1:'Day 1 · Thu Jul 9', 2:'Day 2 · Fri Jul 10', 3:'Day 3 · Sat Jul 11'};
+    const label = document.getElementById('att-day-label');
+    if (!attDay) {
+      if (label) label.textContent = 'No active day — enable a day in admin panel';
+      document.getElementById('att-stats').innerHTML = '<div class="loading-box" style="grid-column:1/-1">⏳ No active day</div>';
+      document.getElementById('att-class-grid').innerHTML = '';
+      return;
+    }
+    if (label) label.textContent = dayLabels[attDay] || 'Day ' + attDay;
+    try {
+      const res  = await fetch(ATT_API + '?action=read&secret=' + encodeURIComponent(dashToken) + '&day=' + attDay + '&t=' + Date.now());
+      const json = await res.json();
+      if (json.status !== 'ok') {
+        if (checkDashAuthResponse(json)) return;
+        return;
+      }
+      const byName = {};
+      json.data.forEach(function(r) {
+        if (!byName[r.child_name] || r.id > byName[r.child_name].id) byName[r.child_name] = r;
+      });
+      attCheckedIn = attFilterByGroups(byName);
+      attUpdateStats();
+      attRenderGrid();
+      if (typeof renderCiRows === 'function') renderCiRows();
+    } catch(e) {}
+  }
+
+  function attUpdateStats() {
+    const all     = Object.values(attCheckedIn);
+    const total   = all.length;
+    const out     = all.filter(attIsOut).length;
+    const inside  = total - out;
+    document.getElementById('att-stats').innerHTML =
+      '<div class="stat-card sc-grass"><div class="stat-e">✅</div><div class="stat-n">' + total  + '</div><div class="stat-l">Arrived Today</div></div>' +
+      '<div class="stat-card sc-amber"><div class="stat-e">🏁</div><div class="stat-n">' + out    + '</div><div class="stat-l">Gone Home</div></div>' +
+      '<div class="stat-card sc-teal" style="border-top-color:var(--teal)"><div class="stat-e">🏠</div><div class="stat-n">'  + inside + '</div><div class="stat-l">Still Inside</div></div>';
+  }
+
+  function attRenderGrid() {
+    const grid = document.getElementById('att-class-grid');
+    const title = document.getElementById('att-grid-title');
+    if (!grid) return;
+    const mode = window._displayMode || 'grade';
+    var chipList;
+    var groups = dashUser.groups || [];
+    if (mode === 'class') {
+      chipList = groups.length
+        ? ATT_CLASS_GROUPS.filter(function(g) { return groups.includes(g.key); })
+        : ATT_CLASS_GROUPS;
+    } else {
+      if (groups.length) {
+        var allowed = [];
+        groups.forEach(function(g) { var k = ATT_GROUP_KEYS[g]; if (k) k.forEach(function(c) { allowed.push(c); }); });
+        chipList = ATT_CLASSES.filter(function(c) { return allowed.indexOf(c.key) !== -1; });
+      } else {
+        chipList = ATT_CLASSES;
+      }
+    }
+    if (title) title.textContent = mode === 'class' ? '🏫 By Class Group' : '📋 By Grade';
+    updateToggleBtn(document.getElementById('att-dm-toggle'));
+
+    grid.innerHTML = chipList.map(function(cls) {
+      const kids = mode === 'class'
+        ? Object.values(attCheckedIn).filter(function(r) { return cls.keys.indexOf(r.class_name) !== -1; })
+        : Object.values(attCheckedIn).filter(function(r) { return r.class_name === cls.key; });
+      const inCnt  = kids.length;
+      const outCnt = kids.filter(attIsOut).length;
+      const rem    = inCnt - outCnt;
+      const nums   = inCnt > 0
+        ? '<div class="cc-nums">' +
+          '<span class="cc-in"  onclick="event.stopPropagation();attOpenModal(this)" title="Arrived">'    + inCnt  + '↓</span>' +
+          '<span class="cc-out" onclick="event.stopPropagation();attOpenModal(this)" title="Gone Home">'  + outCnt + '↑</span>' +
+          '<span class="cc-rem" onclick="event.stopPropagation();attOpenModal(this)" title="Still Inside">'+ rem   + '●</span>' +
+          '</div>'
+        : '<div class="cc-nums"><span style="font-size:.65rem;color:var(--muted)">—</span></div>';
+      return '<div class="class-chip' + (inCnt > 0 ? ' has-kids' : '') + '"' +
+        ' data-key="' + cls.key + '"' +
+        ' data-label="' + cls.emoji + ' ' + cls.name + '"' +
+        ' onclick="attOpenModal(this)" style="cursor:pointer">' +
+        '<div class="cc-emoji">' + cls.emoji + '</div>' +
+        '<div class="cc-name">' + cls.name + '</div>' +
+        nums + '</div>';
+    }).join('');
+  }
+
+  function attOpenModal(el) {
+    const chip = el.closest ? el.closest('.class-chip') : el;
+    if (!chip) return;
+    const key   = chip.dataset.key;
+    const label = chip.dataset.label;
+    let filter  = 'all';
+    if (el.classList && el.classList.contains('cc-out')) filter = 'out';
+    if (el.classList && el.classList.contains('cc-rem')) filter = 'inside';
+
+    const groupKeys = ATT_GROUP_KEYS[key];
+    const all = Object.values(attCheckedIn).filter(function(r) {
+      return groupKeys ? groupKeys.indexOf(r.class_name) !== -1 : r.class_name === key;
+    });
+    let kids = all;
+    if (filter === 'out')    kids = all.filter(attIsOut);
+    if (filter === 'inside') kids = all.filter(function(r) { return !attIsOut(r); });
+
+    const filterLabels = {all:'Arrived Today', out:'Gone Home ✅', inside:'Still Inside 🏠'};
+    document.getElementById('att-fm-title').textContent = label + ' · ' + filterLabels[filter];
+
+    if (!kids.length) {
+      document.getElementById('att-fm-list').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);font-weight:700">No kids in this category</div>';
+    } else {
+      document.getElementById('att-fm-list').innerHTML = kids.map(function(r) {
+        const emoji  = ATT_CLASS_EMOJI[r.class_name] || '🎒';
+        const isOut  = attIsOut(r);
+        const badge  = isOut
+          ? '<div style="margin-left:auto;background:#DCFCE7;color:#166534;padding:4px 10px;border-radius:20px;font-size:.75rem;font-weight:800;white-space:nowrap">✅ ' + r.checkout_time + '</div>'
+          : '<div style="margin-left:auto;background:#EDE9FE;color:#4F46E5;padding:4px 10px;border-radius:20px;font-size:.75rem;font-weight:800;white-space:nowrap">🏠 Inside</div>';
+        const allergy = r.allergies && r.allergies !== 'None'
+          ? '<div style="margin-top:3px"><span style="background:#FEF3C7;color:#92400E;border:1px solid #FDE68A;border-radius:6px;padding:2px 8px;font-size:.72rem;font-weight:800;display:inline-block">⚠️ ' + r.allergies + '</span></div>' : '';
+        return '<div style="display:flex;align-items:center;gap:12px;padding:12px 8px;border-bottom:1px solid var(--border)">' +
+          '<div style="font-size:1.5rem;width:36px;text-align:center">' + emoji + '</div>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-weight:800;font-size:.95rem">' + r.child_name + '</div>' +
+            '<div style="font-size:.78rem;color:var(--muted);font-weight:600">' + r.class_name + (r.parent ? ' · 👨‍👩‍👧 ' + r.parent : '') + '</div>' +
+            allergy +
+          '</div>' + badge + '</div>';
+      }).join('');
+    }
+
+    const overlay = document.getElementById('att-fm-overlay');
+    const modal   = document.getElementById('att-fm-modal');
+    overlay.style.opacity = '1'; overlay.style.pointerEvents = 'all';
+    modal.style.transform  = 'translateY(0)';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function attCloseModal() {
+    const overlay = document.getElementById('att-fm-overlay');
+    const modal   = document.getElementById('att-fm-modal');
+    overlay.style.opacity = '0'; overlay.style.pointerEvents = 'none';
+    modal.style.transform  = 'translateY(100%)';
+    document.body.style.overflow = '';
+  }
+
+  document.getElementById('att-fm-overlay').addEventListener('click', function(e) {
+    if (e.target === this) attCloseModal();
+  });
+
+  /* ══════════════════════════════════════
+     CHECKED-IN vs REGISTERED
+  ══════════════════════════════════════ */
+  let _ciData = {};
+
+  const CI_CLASS_ORDER = [
+    {key:'Pre-K',        label:'Pre-K',  emoji:'🎈'},
+    {key:'Kindergarten', label:'Kinder', emoji:'🌟'},
+    {key:'1st Grade',    label:'1st',    emoji:'📚'},
+    {key:'2nd Grade',    label:'2nd',    emoji:'✏️'},
+    {key:'3rd Grade',    label:'3rd',    emoji:'🚀'},
+    {key:'4th Grade',    label:'4th',    emoji:'⚽'},
+    {key:'5th Grade',    label:'5th',    emoji:'🔥'},
+    {key:'6th Grade',    label:'6th',    emoji:'🎨'},
+    {key:'7th Grade',    label:'7th',    emoji:'👑'},
+    {key:'8th Grade',    label:'8th',    emoji:'🏆'}
+  ];
+  const CI_GRADE_CLASS = {
+    'Pre K':'Pre-K','Pre-K':'Pre-K','PreK':'Pre-K',
+    'K':'Kindergarten','Kindergarten':'Kindergarten',
+    '1st':'1st Grade','2nd':'2nd Grade','3rd':'3rd Grade',
+    '4th':'4th Grade','5th':'5th Grade','6th':'6th Grade',
+    '7th':'7th Grade','8th':'8th Grade'
+  };
+  function ciGetClass(grade) {
+    if (!grade) return null;
+    const g = grade.trim();
+    if (CI_GRADE_CLASS[g]) return CI_GRADE_CLASS[g];
+    for (const k of Object.keys(CI_GRADE_CLASS)) {
+      if (g.toLowerCase().includes(k.toLowerCase())) return CI_GRADE_CLASS[k];
+    }
+    return null;
+  }
+
+  // Inject CI styles once
+  (function() {
+    const s = document.createElement('style');
+    s.textContent = `
+      .ci-day-btn { padding:5px 14px; border-radius:99px; border:2px solid var(--border); background:var(--card-bg); font-family:'Nunito',sans-serif; font-size:.75rem; font-weight:800; cursor:pointer; color:var(--muted); transition:all .15s; }
+      .ci-day-btn.active { background:var(--navy); color:var(--sun); border-color:var(--navy); }
+      .ci-class-row { display:flex; align-items:center; gap:10px; padding:8px; border-bottom:1px solid var(--border); cursor:pointer; border-radius:8px; transition:background .12s; }
+      .ci-class-row:hover { background:#F5F9FF; }
+      .ci-class-row:last-child { border-bottom:none; }
+      .ci-class-emoji { font-size:1.1rem; width:24px; text-align:center; flex-shrink:0; }
+      .ci-class-name { font-weight:700; font-size:.82rem; color:var(--navy); flex:1; min-width:40px; }
+      .ci-bar-wrap { flex:2; background:#EEF3FB; border-radius:99px; height:8px; overflow:hidden; }
+      .ci-bar-fill { height:100%; border-radius:99px; background:var(--grass); transition:width .6s ease; }
+      .ci-counts { font-size:.75rem; font-weight:800; color:var(--navy); white-space:nowrap; }
+      .ci-missing { font-size:.7rem; font-weight:800; color:#EF4444; background:#FEE2E2; border-radius:99px; padding:2px 8px; white-space:nowrap; }
+      .ci-all-in  { font-size:.7rem; font-weight:800; color:#16A34A; background:#DCFCE7; border-radius:99px; padding:2px 8px; }
+      .ci-modal-ov { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:700; display:flex; align-items:flex-end; justify-content:center; opacity:0; pointer-events:none; transition:opacity .2s; }
+      .ci-modal-ov.open { opacity:1; pointer-events:all; }
+      .ci-modal { background:white; border-radius:24px 24px 0 0; width:100%; max-width:500px; max-height:80vh; display:flex; flex-direction:column; transform:translateY(100%); transition:transform .3s cubic-bezier(.34,1.2,.64,1); overflow:hidden; }
+      .ci-modal-ov.open .ci-modal { transform:translateY(0); }
+      .ci-modal-head { display:flex; align-items:center; justify-content:space-between; padding:18px 20px 14px; border-bottom:1px solid var(--border); flex-shrink:0; }
+      .ci-modal-title { font-family:'Fredoka One',cursive; font-size:1.2rem; color:var(--navy); }
+      .ci-modal-close { width:30px; height:30px; border-radius:50%; border:none; background:var(--page-bg); cursor:pointer; font-size:.9rem; }
+      .ci-modal-body { overflow-y:auto; padding:14px 20px 24px; }
+      .ci-name-row { display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--border); font-size:.85rem; gap:10px; }
+      .ci-name-row:last-child { border-bottom:none; }
+      .ci-name { font-weight:700; color:var(--navy); flex:1; }
+      .ci-parent { font-size:.72rem; color:var(--muted); font-weight:600; }
+      .ci-badge-in  { background:#DCFCE7; color:#166534; padding:3px 10px; border-radius:99px; font-size:.7rem; font-weight:800; white-space:nowrap; }
+      .ci-badge-out { background:#FEE2E2; color:#991B1B; padding:3px 10px; border-radius:99px; font-size:.7rem; font-weight:800; white-space:nowrap; }
+    `;
+    document.head.appendChild(s);
+    document.body.insertAdjacentHTML('beforeend',
+      '<div class="ci-modal-ov" id="ci-modal-ov" onclick="if(event.target===this)closeCiModal()">' +
+        '<div class="ci-modal">' +
+          '<div class="ci-modal-head">' +
+            '<div class="ci-modal-title" id="ci-modal-title"></div>' +
+            '<button class="ci-modal-close" onclick="closeCiModal()">✕</button>' +
+          '</div>' +
+          '<div class="ci-modal-body" id="ci-modal-body"></div>' +
+        '</div>' +
+      '</div>'
+    );
+  })();
+
+  async function loadCiStatus() {
+    const rowsEl = document.getElementById('ci-status-rows');
+    if (!rowsEl) return;
+    if (!dashToken) { rowsEl.innerHTML = '<p style="font-size:.78rem;color:var(--muted)">Log in to see check-in data.</p>'; return; }
+    rowsEl.innerHTML = '<span class="spin">⏳</span>';
+    try {
+      const results = await Promise.all([1,2,3].map(async function(d) {
+        try {
+          const res  = await fetch(ATT_API + '?action=read&secret=' + encodeURIComponent(dashToken) + '&day=' + d + '&t=' + Date.now());
+          const json = await res.json();
+          if (json.status !== 'ok') return {day:d, data:[]};
+          const byName = {};
+          json.data.forEach(function(r) { if (!byName[r.child_name] || r.id > byName[r.child_name].id) byName[r.child_name] = r; });
+          return {day:d, data:Object.values(byName)};
+        } catch(dayErr) { return {day:d, data:[]}; }
+      }));
+      _ciData = {};
+      results.forEach(function(res) {
+        _ciData[res.day] = {};
+        res.data.forEach(function(r) {
+          if (!_ciData[res.day][r.class_name]) _ciData[res.day][r.class_name] = [];
+          _ciData[res.day][r.class_name].push({ name: r.child_name, checkedOut: !!(r.checkout_time && r.checkout_time.trim()) });
+        });
+      });
+      renderCiRows();
+    } catch(e) {
+      if (rowsEl) rowsEl.innerHTML = '<p style="color:#EF4444;font-size:.78rem">⚠️ Could not load: ' + e.message + '</p>';
+      console.error('loadCiStatus error:', e);
+    }
+  }
+
+  const CI_CLASS_GROUPS = [
+    { key:'Pre-K',       label:'Pre-K',       emoji:'🎈', gradeKeys:['Pre-K'] },
+    { key:'Pre-Primary', label:'Pre-Primary', emoji:'🎠', gradeKeys:['Kindergarten','1st Grade','2nd Grade'] },
+    { key:'Primary',     label:'Primary',     emoji:'📘', gradeKeys:['3rd Grade','4th Grade','5th Grade'] },
+    { key:'Junior',      label:'Junior',      emoji:'🎓', gradeKeys:['6th Grade','7th Grade','8th Grade'] }
+  ];
+
+  function renderCiRows() {
+    const rowsEl = document.getElementById('ci-status-rows');
+    if (!rowsEl) return;
+    if (!attDay) { rowsEl.innerHTML = '<p style="color:var(--muted);font-size:.78rem">⏳ Waiting for active day…</p>'; return; }
+    const mode = window._displayMode || 'grade';
+    const kids = window._allKids || [];
+    const checkedIn = _ciData[attDay] || {};
+    const groups = dashUser.groups || [];
+    const regByClass = {};
+    kids.forEach(function(k) {
+      const cls = ciGetClass(k.grade);
+      if (cls) { if (!regByClass[cls]) regByClass[cls] = []; regByClass[cls].push(k); }
+    });
+    // Filter orderList by user's assigned groups (same logic as attRenderGrid)
+    var orderList;
+    if (mode === 'class') {
+      orderList = groups.length
+        ? CI_CLASS_GROUPS.filter(function(g) { return groups.includes(g.key); })
+        : CI_CLASS_GROUPS;
+    } else {
+      if (groups.length) {
+        var allowed = [];
+        groups.forEach(function(g) { var k = ATT_GROUP_KEYS[g]; if (k) k.forEach(function(c) { allowed.push(c); }); });
+        orderList = CI_CLASS_ORDER.filter(function(c) { return allowed.indexOf(c.key) !== -1; });
+      } else {
+        orderList = CI_CLASS_ORDER;
+      }
+    }
+    const html = orderList.map(function(cls) {
+      var regKids, ciNames;
+      if (mode === 'class' && cls.gradeKeys) {
+        regKids = cls.gradeKeys.reduce(function(acc,k){ return acc.concat(regByClass[k]||[]); },[]);
+        ciNames = cls.gradeKeys.reduce(function(acc,k){ return acc.concat((checkedIn[k]||[]).map(function(r){return r.name.toLowerCase();})); },[]);
+      } else {
+        regKids = regByClass[cls.key] || [];
+        ciNames = (checkedIn[cls.key] || []).map(function(r){ return r.name.toLowerCase(); });
+      }
+      if (!regKids.length && !ciNames.length) {
+        // No registered kids and no check-ins — show 0/0 row with no badge
+        return '<div class="ci-class-row">' +
+          '<span class="ci-class-emoji">' + cls.emoji + '</span>' +
+          '<span class="ci-class-name">' + (cls.label || cls.key) + '</span>' +
+          '<div class="ci-bar-wrap"><div class="ci-bar-fill" style="width:0%"></div></div>' +
+          '<span class="ci-counts" style="color:var(--muted)">0/0</span>' +
+          '</div>';
+      }
+      const regCount = regKids.length;
+      const missing = regCount - ciNames.length;
+      const ciCount = ciNames.length;
+      const pct   = regCount > 0 ? Math.min(ciCount/regCount*100,100) : 0;
+      const badge = missing > 0
+        ? '<span class="ci-missing">\u2212' + missing + ' not in</span>'
+        : '<span class="ci-all-in">\u2705 All in</span>';
+      return '<div class="ci-class-row" onclick="openCiModal(\'' + cls.key + '\',\'' + cls.emoji + ' ' + cls.label + '\')">' +
+        '<span class="ci-class-emoji">' + cls.emoji + '</span>' +
+        '<span class="ci-class-name">' + cls.label + '</span>' +
+        '<div class="ci-bar-wrap"><div class="ci-bar-fill" style="width:' + pct + '%"></div></div>' +
+        '<span class="ci-counts">' + ciCount + '/' + regCount + '</span>' +
+        badge + '</div>';
+    }).filter(Boolean).join('');
+    rowsEl.innerHTML = html || '<p style="color:var(--muted);font-size:.78rem">No data yet.</p>';
+  }
+
+  function openCiModal(classKey, classLabel) {
+    const mode = window._displayMode || 'grade';
+    const kids = window._allKids || [];
+    const checkedIn = _ciData[attDay] || {};
+    const group = CI_CLASS_GROUPS.find(function(g){ return g.key === classKey; });
+    const gradeKeys = (mode === 'class' && group) ? group.gradeKeys : [classKey];
+    const ciNames = gradeKeys.reduce(function(acc,k){ return acc.concat((checkedIn[k]||[]).map(function(r){return r.name.toLowerCase();})); },[]);
+    const registered = kids.filter(function(k){ return gradeKeys.indexOf(ciGetClass(k.grade)) !== -1; });
+    const missing = registered.filter(function(k){ return ciNames.indexOf(k.name.toLowerCase()) === -1; });
+    const dayLabels = {1:'Day 1 · Jul 9', 2:'Day 2 · Jul 10', 3:'Day 3 · Jul 11'};
+    document.getElementById('ci-modal-title').textContent = classLabel + ' · ' + dayLabels[attDay];
+    document.getElementById('ci-modal-body').innerHTML = missing.length
+      ? missing.map(function(k){
+          return '<div class="ci-name-row"><div><div class="ci-name">' + k.name + '</div><div class="ci-parent">\u{1F46A} ' + k.parent + '</div></div><span class="ci-badge-out">Not in yet</span></div>';
+        }).join('')
+      : '<p style="color:#16A34A;text-align:center;padding:20px;font-weight:700">\u2705 All kids checked in!</p>';
+    document.getElementById('ci-modal-ov').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeCiModal() {
+    document.getElementById('ci-modal-ov').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  // Start polling when attendance tab is opened, load iframes for ci/co
+  const _origSwitchTab = switchTab;
+  window.switchTab = function(name, btn) {
+    _origSwitchTab(name, btn);
+    if (name === 'ci') loadIframe('checkin');
+    if (name === 'co') loadIframe('checkout');
+    if (name === 'vol_attendance') loadIframe('vol_attendance');
+    if (name === 'attendance') {
+      if (dashToken && !attInterval) {
+        attRefresh();
+        loadCiStatus();
+        attInterval = setInterval(attRefresh, 15000);
+      }
+    } else {
+      if (attInterval) { clearInterval(attInterval); attInterval = null; }
+    }
+    if (name === 'schedule' && !_scheduleRows.length) {
+      loadSchedule();
+    }
+  };
+</script>
+
+</body>
+</html>

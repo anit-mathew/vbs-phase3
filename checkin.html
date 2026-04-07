@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VBS 2026 — Check In</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F0F4FF;
+    --card: #FFFFFF;
+    --primary: #4F46E5;
+    --primary-light: #EEF2FF;
+    --green: #22C55E;
+    --green-light: #F0FDF4;
+    --red: #EF4444;
+    --amber: #F59E0B;
+    --text: #1A2744;
+    --muted: #7A8BAD;
+    --border: #E2E8F0;
+    --radius: 16px;
+    --shadow: 0 4px 24px rgba(79,70,229,.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ── PIN SCREEN ── */
+  .pin-screen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+  }
+  .pin-box {
+    background: white; border-radius: 24px; padding: 40px 36px; width: 340px;
+    text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  }
+  .pin-icon { font-size: 3rem; margin-bottom: 12px; }
+  .pin-title { font-family: 'Fredoka One', cursive; font-size: 1.6rem; color: var(--text); margin-bottom: 4px; }
+  .pin-sub { color: var(--muted); font-size: .85rem; margin-bottom: 24px; }
+  .pin-input {
+    width: 100%; padding: 12px 16px; font-size: 1rem; letter-spacing: normal;
+    text-align: left; border: 2px solid var(--border); border-radius: 12px;
+    font-family: 'Nunito', sans-serif; font-weight: 600; outline: none;
+    transition: border-color .2s; margin-bottom: 10px; box-sizing: border-box;
+  }
+  .pin-input:focus { border-color: var(--primary); }
+  .pin-btn {
+    margin-top: 16px; width: 100%; padding: 14px; background: var(--primary);
+    color: white; border: none; border-radius: 12px; font-size: 1rem;
+    font-weight: 800; font-family: 'Nunito', sans-serif; cursor: pointer;
+    transition: opacity .2s;
+  }
+  .pin-btn:hover { opacity: .9; }
+  .pin-err { color: var(--red); font-size: .82rem; margin-top: 10px; font-weight: 700; min-height: 18px; }
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+    padding: 16px 24px; display: flex; align-items: center; justify-content: space-between;
+    color: white;
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .header-title { font-family: 'Fredoka One', cursive; font-size: 1.4rem; }
+  .header-sub { font-size: .78rem; opacity: .8; margin-top: 2px; }
+  .day-selector { display: flex; gap: 8px; }
+  .day-drop {
+    padding: 9px 14px; border-radius: 20px; border: 2px solid rgba(255,255,255,.5);
+    background: rgba(255,255,255,.15); color: white; font-weight: 800;
+    font-family: 'Nunito', sans-serif; font-size: .85rem; cursor: pointer;
+    outline: none; appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='white' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center;
+    padding-right: 32px;
+  }
+  .day-drop option { background: #4F46E5; color: white; }
+
+  /* ── LIVE COUNTER ── */
+  .live-bar {
+    background: white; border-bottom: 1px solid var(--border);
+    padding: 10px 24px; display: flex; gap: 24px; align-items: center; flex-wrap: wrap;
+  }
+  .live-stat { display: flex; align-items: center; gap: 8px; }
+  .live-dot { width: 10px; height: 10px; border-radius: 50%; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.3)} }
+  .live-num { font-family: 'Fredoka One', cursive; font-size: 1.3rem; }
+  .live-lbl { font-size: .75rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+
+  /* ── MAIN ── */
+  .main { max-width: 680px; margin: 0 auto; padding: 24px 16px; }
+
+  /* ── SEARCH ── */
+  .search-card { background: var(--card); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); margin-bottom: 20px; }
+  .search-label { font-weight: 800; font-size: .9rem; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
+  .search-wrap { position: relative; }
+  .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 1.1rem; }
+  .search-input {
+    width: 100%; padding: 14px 14px 14px 44px; font-size: 1.05rem;
+    border: 2px solid var(--border); border-radius: 12px; font-family: 'Nunito', sans-serif;
+    font-weight: 700; outline: none; transition: border-color .2s; background: var(--bg);
+  }
+  .search-input:focus { border-color: var(--primary); background: white; }
+
+  /* ── RESULTS ── */
+  .results { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+  .result-item {
+    background: var(--bg); border: 2px solid var(--border); border-radius: 12px;
+    padding: 14px 16px; display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; transition: all .2s; gap: 12px;
+  }
+  .result-item:hover { border-color: var(--primary); background: var(--primary-light); }
+  .result-item.already-in { border-color: var(--green); background: var(--green-light); cursor: default; }
+  .result-info { flex: 1; min-width: 0; }
+  .result-name { font-weight: 800; font-size: 1rem; }
+  .result-meta { font-size: .78rem; color: var(--muted); margin-top: 3px; }
+  .result-grade {
+    font-size: .7rem; font-weight: 800; padding: 3px 10px; border-radius: 20px;
+    background: var(--primary); color: white; white-space: nowrap;
+  }
+  .checkin-btn {
+    padding: 10px 18px; background: var(--primary); color: white; border: none;
+    border-radius: 10px; font-weight: 800; font-family: 'Nunito', sans-serif;
+    font-size: .85rem; cursor: pointer; white-space: nowrap; transition: all .2s;
+  }
+  .checkin-btn:hover { background: #4338CA; transform: scale(1.03); }
+  .already-badge {
+    padding: 8px 14px; background: var(--green); color: white; border-radius: 10px;
+    font-weight: 800; font-size: .8rem; white-space: nowrap;
+  }
+  .allergy-tag {
+    display: inline-block; background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A;
+    border-radius: 6px; padding: 2px 8px; font-size: .72rem; font-weight: 800; margin-top: 4px;
+  }
+  .no-results { text-align: center; padding: 24px; color: var(--muted); font-weight: 700; }
+
+  /* ── SUCCESS TOAST ── */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px);
+    background: var(--green); color: white; padding: 16px 28px; border-radius: 16px;
+    font-weight: 800; font-size: 1rem; box-shadow: 0 8px 32px rgba(34,197,94,.4);
+    transition: transform .4s cubic-bezier(.34,1.56,.64,1); z-index: 999;
+    text-align: center; min-width: 280px;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast-name { font-family: 'Fredoka One', cursive; font-size: 1.3rem; }
+  .toast-detail { font-size: .82rem; opacity: .9; margin-top: 4px; }
+
+  /* ── CONFIRMATION MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 100;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: white; border-radius: 24px; padding: 32px; width: 100%; max-width: 420px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.2); transform: scale(.95); transition: transform .2s;
+  }
+  .modal-overlay.open .modal { transform: scale(1); }
+  .modal-head { text-align: center; margin-bottom: 24px; }
+  .modal-emoji { font-size: 3rem; margin-bottom: 8px; }
+  .modal-title { font-family: 'Fredoka One', cursive; font-size: 1.5rem; color: var(--text); }
+  .modal-sub { color: var(--muted); font-size: .85rem; margin-top: 4px; }
+  .modal-info { background: var(--bg); border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+  .modal-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: .9rem; }
+  .modal-row:not(:last-child) { border-bottom: 1px solid var(--border); }
+  .modal-key { color: var(--muted); font-weight: 700; }
+  .modal-val { font-weight: 800; text-align: right; }
+  .modal-allergy { background: #FEF3C7; border: 1px solid #FDE68A; border-radius: 10px; padding: 10px 14px; margin-bottom: 20px; font-size: .85rem; font-weight: 700; color: #92400E; }
+  .modal-btns { display: flex; gap: 10px; }
+  .btn-cancel { flex: 1; padding: 14px; border: 2px solid var(--border); border-radius: 12px; background: white; font-weight: 800; font-family: 'Nunito', sans-serif; font-size: .95rem; cursor: pointer; color: var(--muted); }
+  .btn-confirm { flex: 2; padding: 14px; background: var(--green); border: none; border-radius: 12px; color: white; font-weight: 800; font-family: 'Nunito', sans-serif; font-size: .95rem; cursor: pointer; transition: opacity .2s; }
+  .btn-confirm:hover { opacity: .9; }
+  .btn-confirm:disabled { opacity: .6; cursor: not-allowed; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state { text-align: center; padding: 48px 24px; }
+  .empty-icon { font-size: 3rem; margin-bottom: 12px; }
+  .empty-title { font-family: 'Fredoka One', cursive; font-size: 1.3rem; color: var(--muted); }
+  .empty-sub { font-size: .85rem; color: var(--muted); margin-top: 6px; }
+
+  /* ── LOADING ── */
+  .spin { display: inline-block; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .refresh-btn {
+    margin-left: auto; display: flex; align-items: center; gap: 6px;
+    padding: 7px 14px; background: white; border: 2px solid var(--border);
+    border-radius: 20px; font-weight: 800; font-family: 'Nunito', sans-serif;
+    font-size: .78rem; cursor: pointer; color: var(--primary); transition: all .2s;
+  }
+  .refresh-btn:hover { background: var(--primary-light); border-color: var(--primary); }
+  .refresh-btn.spinning .r-icon { display: inline-block; animation: spin .6s linear infinite; }
+  /* ── STATS BAR ── */
+  .stats-bar { background: white; border-bottom: 1px solid var(--border); padding: 12px 24px; }
+  .stats-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
+  .stats-totals { display: flex; gap: 10px; flex-wrap: wrap; }
+  .total-pill { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 20px; font-family: 'Nunito', sans-serif; transition: transform .15s, box-shadow .15s; }
+  .total-pill:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.1); }
+  .total-pill.green  { background: #F0FDF4; border: 1.5px solid #86EFAC; }
+  .total-pill.amber  { background: #FFFBEB; border: 1.5px solid #FCD34D; }
+  .total-pill.indigo { background: #EEF2FF; border: 1.5px solid #A5B4FC; }
+  .tp-num { font-family: 'Fredoka One', cursive; font-size: 1.3rem; line-height: 1; }
+  .total-pill.green  .tp-num  { color: #16A34A; }
+  .total-pill.amber  .tp-num  { color: #D97706; }
+  .total-pill.indigo .tp-num  { color: #4F46E5; }
+  .tp-lbl { font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); }
+  .stats-actions { display: flex; align-items: center; gap: 12px; }
+
+  /* ── CLASS GRID ── */
+  .class-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+  .class-chip {
+    background: var(--bg); border: 1.5px solid var(--border); border-radius: 10px;
+    padding: 8px 10px; text-align: center; transition: all .2s;
+  }
+  .class-chip.has-kids { border-color: var(--primary); background: var(--primary-light); }
+  .cc-emoji { font-size: 1.1rem; }
+  .cc-name { font-size: .65rem; font-weight: 800; color: var(--muted); margin: 2px 0; text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cc-nums { display: flex; justify-content: center; gap: 6px; margin-top: 2px; }
+  .cc-in  { font-size: .72rem; font-weight: 800; color: #16A34A; }
+  .cc-out { font-size: .72rem; font-weight: 800; color: #D97706; }
+  .cc-rem { font-size: .72rem; font-weight: 800; color: #4F46E5; }
+
+  .day-drop {
+    padding: 9px 16px; border-radius: 20px; border: 2px solid rgba(255,255,255,.5);
+    background: rgba(255,255,255,.15); color: white; font-weight: 800;
+    font-family: 'Nunito', sans-serif; font-size: .85rem; cursor: pointer;
+    outline: none; appearance: none; -webkit-appearance: none; min-width: 200px;
+  }
+  .day-drop option { background: #4F46E5; color: white; }
+  .stats-bar { background: white; border-bottom: 1px solid var(--border); padding: 14px 24px; }
+  .stats-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
+  .stats-totals { display: flex; gap: 10px; flex-wrap: wrap; }
+  .total-pill { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 20px; }
+  .total-pill.green  { background: #F0FDF4; border: 1.5px solid #86EFAC; }
+  .total-pill.amber  { background: #FFFBEB; border: 1.5px solid #FCD34D; }
+  .total-pill.indigo { background: #EEF2FF; border: 1.5px solid #A5B4FC; }
+  .tp-num { font-family: 'Fredoka One', cursive; font-size: 1.3rem; line-height: 1; }
+  .total-pill.green  .tp-num { color: #16A34A; }
+  .total-pill.amber  .tp-num { color: #D97706; }
+  .total-pill.indigo .tp-num { color: #4F46E5; }
+  .tp-lbl { font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); }
+  .stats-actions { display: flex; align-items: center; gap: 12px; }
+  .class-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; }
+  .class-chip { background: var(--bg); border: 1.5px solid var(--border); border-radius: 10px; padding: 8px; text-align: center; }
+  .class-chip.has-kids { border-color: var(--primary); background: var(--primary-light); }
+  .cc-emoji { font-size: 1.1rem; }
+  .cc-name { font-size: .62rem; font-weight: 800; color: var(--muted); margin: 2px 0; text-transform: uppercase; letter-spacing: .3px; }
+  .cc-nums { display: flex; justify-content: center; gap: 5px; margin-top: 3px; }
+  .cc-in  { font-size: .7rem; font-weight: 800; color: #16A34A; }
+  .cc-out { font-size: .7rem; font-weight: 800; color: #D97706; }
+  .cc-rem { font-size: .7rem; font-weight: 800; color: #4F46E5; }
+  @media (max-width: 480px) {
+    /* ── HEADER mobile ── */
+    .header {
+      padding: 12px 16px 0;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0;
+    }
+    .header-left { margin-bottom: 10px; }
+    .header-title { font-size: 1.1rem; }
+    .header-sub   { font-size: .7rem; }
+
+    /* Quick links row: ID Cards + Merch side by side */
+    .day-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      padding-bottom: 10px;
+    }
+    /* ID Cards and Merch links fill their column */
+    .day-selector > a {
+      justify-content: center;
+      font-size: .72rem !important;
+      padding: 7px 8px !important;
+      border-radius: 8px !important;
+    }
+    /* Grade|Class toggle spans full width */
+    .display-mode-toggle {
+      grid-column: 1 / -1;
+      justify-content: center;
+      font-size: .78rem;
+      padding: 7px 14px;
+    }
+    /* Day select spans full width */
+    .day-drop {
+      grid-column: 1 / -1;
+      width: 100%;
+      min-width: unset;
+      font-size: .82rem;
+      padding: 9px 32px 9px 14px;
+      border-radius: 10px;
+    }
+
+    /* ── STATS BAR mobile ── */
+    .stats-bar { padding: 10px 12px; }
+    .stats-top  { flex-direction: column; align-items: stretch; gap: 8px; margin-bottom: 10px; }
+
+    /* Stats pills: 3 across full width */
+    .stats-totals {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .total-pill {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      padding: 8px 6px;
+      border-radius: 12px;
+      text-align: center;
+    }
+    .tp-num { font-size: 1.4rem; }
+    .tp-lbl { font-size: .58rem; letter-spacing: .2px; text-align: center; }
+
+    /* Actions row: day label + refresh compact */
+    .stats-actions { justify-content: space-between; }
+    .refresh-btn { padding: 6px 12px; font-size: .75rem; }
+    #day-label { font-size: .72rem; }
+
+    /* Class grid: 2 cols on mobile */
+    .class-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+
+    /* Modal */
+    .modal { padding: 24px; }
+    .live-bar { gap: 16px; }
+  }
+
+  @media (max-width: 360px) {
+    .stats-totals { grid-template-columns: 1fr 1fr 1fr; }
+    .tp-lbl { font-size: .52rem; }
+    .day-selector > a { font-size: .66rem !important; }
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20%      { transform: translateX(-6px); }
+    40%      { transform: translateX(6px); }
+    60%      { transform: translateX(-4px); }
+    80%      { transform: translateX(4px); }
+  }
+
+  /* Filter Modal */
+  .fm-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 500;
+    display: flex; align-items: flex-end; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .fm-overlay.open { opacity: 1; pointer-events: all; }
+  .fm-modal {
+    background: white; border-radius: 24px 24px 0 0; width: 100%; max-width: 680px;
+    max-height: 80vh; display: flex; flex-direction: column;
+    transform: translateY(100%); transition: transform .3s cubic-bezier(.34,1.2,.64,1);
+    overflow: hidden;
+  }
+  .fm-overlay.open .fm-modal { transform: translateY(0); }
+  .fm-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 24px 16px; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: white; z-index: 1;
+  }
+  .fm-title { font-family: 'Fredoka One', cursive; font-size: 1.3rem; color: var(--text); }
+  .fm-close {
+    width: 32px; height: 32px; border-radius: 50%; border: none;
+    background: var(--bg); font-size: 1rem; cursor: pointer; font-weight: 800;
+  }
+  .fm-list { overflow-y: auto; padding: 12px 16px 32px; }
+  .fm-row {
+    display: flex; align-items: center; gap: 12px; padding: 12px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .fm-row:last-child { border-bottom: none; }
+  .fm-avatar { font-size: 1.5rem; width: 36px; text-align: center; }
+  .fm-name { font-weight: 800; font-size: .95rem; }
+  .fm-meta { font-size: .78rem; color: var(--muted); font-weight: 600; }
+  .fm-badge-out  { margin-left: auto; background: #DCFCE7; color: #166534; padding: 4px 10px; border-radius: 20px; font-size: .75rem; font-weight: 800; white-space: nowrap; }
+  .fm-badge-in   { margin-left: auto; background: #EDE9FE; color: #4F46E5; padding: 4px 10px; border-radius: 20px; font-size: .75rem; font-weight: 800; white-space: nowrap; }
+  .fm-empty { text-align: center; padding: 40px 20px; color: var(--muted); font-weight: 700; }
+  /* ── Display Mode Toggle ── */
+  .display-mode-toggle {
+    display: inline-flex; align-items: center; gap: 6px;
+    border-radius: 99px; padding: 5px 14px; cursor: pointer;
+    font-family: 'Nunito', sans-serif; font-size: .75rem; font-weight: 700;
+    transition: opacity .15s; user-select: none; border: 2px solid rgba(255,255,255,.4);
+    background: rgba(255,255,255,.15); color: white;
+  }
+  .display-mode-toggle:hover { opacity: .85; }
+  .dm-opt { transition: color .15s; opacity: .6; }
+  .dm-active { opacity: 1; font-weight: 800; }
+  .dm-sep { opacity: .4; }
+</style>
+</head>
+<body>
+
+<!-- PIN SCREEN -->
+<div class="pin-screen" id="pin-screen">
+  <div class="pin-box">
+    <div class="pin-icon">⛪</div>
+    <div class="pin-title">VBS 2026</div>
+    <div class="pin-sub">Check-In · Sign in to continue</div>
+    <input class="pin-input" type="text" id="login-username" placeholder="Username" autocomplete="username"
+      style="margin-bottom:10px" onkeydown="if(event.key==='Enter')document.getElementById('login-password').focus()">
+    <input class="pin-input" type="password" id="login-password" placeholder="Password" autocomplete="current-password"
+      onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="pin-btn" id="pin-btn" onclick="doLogin()">Sign In →</button>
+    <div class="pin-err" id="pin-err"></div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <div>
+        <div class="header-title">✅ VBS 2026 — Check In</div>
+        <div class="header-sub" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span>India Christian Assembly NJ · Registration Desk</span>
+          <span id="user-display" style="display:none;align-items:center;gap:6px">
+            <span id="user-name-label" style="font-size:.72rem;color:rgba(255,255,255,.8);font-weight:700"></span>
+            <button onclick="doLogout()"
+              style="background:rgba(239,68,68,.3);border:1px solid rgba(239,68,68,.5);border-radius:6px;
+                     padding:2px 9px;color:white;font-size:.68rem;font-weight:800;cursor:pointer"
+              onmouseover="this.style.background='rgba(239,68,68,.55)'"
+              onmouseout="this.style.background='rgba(239,68,68,.3)'">
+              🚪 Logout
+            </button>
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="day-selector" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <a id="id-cards-link" href="id_cards.html" target="_blank"
+        style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.12);
+               border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:5px 12px;
+               color:rgba(255,255,255,.85);font-size:.75rem;font-weight:800;text-decoration:none;
+               transition:background .15s;white-space:nowrap"
+        onmouseover="this.style.background='rgba(255,255,255,.22)'"
+        onmouseout="this.style.background='rgba(255,255,255,.12)'"
+        onclick="this.href='id_cards.html?token='+encodeURIComponent(PIN||'')">
+        🪪 ID Cards
+      </a>
+      <a id="merch-link" href="merch_station.html" target="_blank"
+        style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.12);
+               border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:5px 12px;
+               color:rgba(255,255,255,.85);font-size:.75rem;font-weight:800;text-decoration:none;
+               transition:background .15s;white-space:nowrap"
+        onmouseover="this.style.background='rgba(255,255,255,.22)'"
+        onmouseout="this.style.background='rgba(255,255,255,.12)'"
+        onclick="this.href='merch_station.html?token='+encodeURIComponent(PIN||'')">
+        🎽 Merch Station
+      </a>
+      <button class="display-mode-toggle" onclick="toggleDisplayModeCheckin()" id="ci-dm-toggle"
+        style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.4);color:white">
+        <span class="dm-opt dm-active">📋 Grade</span><span class="dm-sep">|</span><span class="dm-opt">🏫 Class</span>
+      </button>
+      <select class="day-drop" id="day-drop" onchange="setDay(parseInt(this.value))">
+        <option value="0">📅 Select a day…</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- LIVE COUNTER -->
+  <div class="stats-bar">
+    <div class="stats-top">
+      <div class="stats-totals">
+        <div class="total-pill green" onclick="showFilterModal('all')" style="cursor:pointer"><span class="tp-num" id="cnt-in">—</span><span class="tp-lbl">Arrived Today</span></div>
+        <div class="total-pill amber" onclick="showFilterModal('out')" style="cursor:pointer"><span class="tp-num" id="cnt-out">—</span><span class="tp-lbl">Gone Home ✅</span></div>
+        <div class="total-pill indigo" onclick="showFilterModal('inside')" style="cursor:pointer"><span class="tp-num" id="cnt-inside">—</span><span class="tp-lbl">Still Inside 🏠</span></div>
+      </div>
+      <div class="stats-actions">
+        <div id="day-label" style="font-size:.78rem;color:var(--muted);font-weight:700"></div>
+        <button class="refresh-btn" id="refresh-btn" onclick="manualRefresh()"><span class="r-icon">↻</span> Refresh</button>
+      </div>
+    </div>
+    <div class="class-grid" id="class-grid"></div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- DAY WARNING -->
+    <div id="day-warn" style="display:none;background:#FEE2E2;border:2px solid #EF4444;border-radius:12px;padding:14px 18px;margin-bottom:18px;font-weight:800;color:#991B1B;font-size:.9rem;animation:shake .4s ease">
+      🚨 Please select a day (Day 1 / Day 2 / Day 3) before checking in kids.
+    </div>
+
+    <!-- NO GROUPS WARNING -->
+    <div id="group-warn" style="display:none;background:#FFF7ED;border:2px solid #F59E0B;border-radius:12px;padding:14px 18px;margin-bottom:18px;font-weight:800;color:#92400E;font-size:.88rem">
+      ⚠️ Your account has no class groups assigned — you cannot check in or see any children. Ask an admin to assign your groups in User Management.
+    </div>
+
+    <!-- SEARCH CARD -->
+    <div class="search-card">
+      <div class="search-label">🔍 Search Child by Name</div>
+      <div class="search-wrap">
+        <span class="search-icon">🧒</span>
+        <input class="search-input" id="search-input" type="text" placeholder="Type child's name…" oninput="searchKids(this.value)" autocomplete="off">
+      </div>
+      <div class="results" id="results">
+        <div class="empty-state">
+          <div class="empty-icon">🔍</div>
+          <div class="empty-title">Start typing to search</div>
+          <div class="empty-sub">Search by child's first or last name</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- CONFIRMATION MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-emoji">✅</div>
+      <div class="modal-title" id="modal-title">Check In Child</div>
+      <div class="modal-sub" id="modal-sub"></div>
+    </div>
+    <div class="modal-info" id="modal-info"></div>
+    <div id="modal-allergy"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-confirm" id="btn-confirm" onclick="confirmCheckin()">✅ Confirm Check In</button>
+    </div>
+  </div>
+</div>
+
+<!-- FILTER MODAL -->
+<div class="fm-overlay" id="fm-overlay">
+  <div class="fm-modal">
+    <div class="fm-header">
+      <div class="fm-title" id="fm-title">All Kids</div>
+      <button class="fm-close" onclick="closeFilterModal()">✕</button>
+    </div>
+    <div class="fm-list" id="fm-list"></div>
+  </div>
+</div>
+
+<!-- OVERRIDE MODAL -->
+<div class="modal-overlay" id="override-overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-emoji">🔐</div>
+      <div class="modal-title">Re-Entry Override</div>
+      <div class="modal-sub" id="override-sub"></div>
+    </div>
+    <div class="modal-info" style="margin-bottom:16px" id="override-info"></div>
+    <div style="margin-bottom:8px;font-size:.85rem;font-weight:700;color:var(--muted)">Enter Admin PIN to allow re-entry:</div>
+    <input class="pin-input" type="password" id="override-pin-input" maxlength="20"
+      placeholder="••••••" style="margin-bottom:8px;width:100%"
+      onkeydown="if(event.key==='Enter')submitOverride()">
+    <div class="pin-err" id="override-err"></div>
+    <div class="modal-btns" style="margin-top:14px">
+      <button class="btn-cancel" onclick="closeOverrideModal()">Cancel</button>
+      <button class="btn-confirm" id="btn-override-confirm" onclick="submitOverride()" style="background:#F59E0B">🔐 Confirm Re-Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div class="toast-name" id="toast-name"></div>
+  <div class="toast-detail" id="toast-detail"></div>
+</div>
+
+<script>
+  /* ── CONFIG ── */
+  let PIN = null; // validated server-side by PHP
+  let currentUser = { username: '', display_name: 'Registration Desk' };
+  let userGroups = []; // assigned class groups for this user ([] = see all)
+  window._displayMode = localStorage.getItem('vbs_display_mode') || 'grade';
+
+  /* ── GROUP → CLASS mapping (mirrors checkout.html) ── */
+  const GROUP_CLASS_MAP = {
+    'Pre-K':       ['Pre-K'],
+    'Pre-Primary': ['Kindergarten','1st Grade','2nd Grade'],
+    'Primary':     ['3rd Grade','4th Grade','5th Grade'],
+    'Junior':      ['6th Grade','7th Grade','8th Grade']
+  };
+
+  /* ── Compute allowed individual class names from userGroups ── */
+  function getAllowedClasses() {
+    if (!userGroups.length) return []; // empty array = no classes allowed (not assigned yet)
+    // Special sentinel: if assigned group is '*' → see all (future admin use)
+    if (userGroups.includes('*')) return null;
+    var allowed = [];
+    userGroups.forEach(function(g) {
+      (GROUP_CLASS_MAP[g] || []).forEach(function(c) {
+        if (allowed.indexOf(c) === -1) allowed.push(c);
+      });
+    });
+    return allowed; // array of className strings the user may see
+  }
+
+  // Returns class group name based on grade or className
+  function getClassGroupName(grade, className) {
+    var cn = (className || '').trim().toLowerCase();
+    if (cn === 'pre-k' || cn === 'prek')   return '🎈 Pre-K';
+    if (cn === 'kindergarten')              return '🎠 Pre-Primary';
+    if (cn === '1st grade' || cn === '1st') return '🎠 Pre-Primary';
+    if (cn === '2nd grade' || cn === '2nd') return '🎠 Pre-Primary';
+    if (cn === '3rd grade' || cn === '3rd') return '📘 Primary';
+    if (cn === '4th grade' || cn === '4th') return '📘 Primary';
+    if (cn === '5th grade' || cn === '5th') return '📘 Primary';
+    if (cn === '6th grade' || cn === '6th') return '🎓 Junior';
+    if (cn === '7th grade' || cn === '7th') return '🎓 Junior';
+    if (cn === '8th grade' || cn === '8th') return '🎓 Junior';
+    // Fallback to raw grade
+    var g = (grade || '').trim().toLowerCase();
+    if (/pre/.test(g) && !/primary/.test(g)) return '🎈 Pre-K';
+    if (g === 'k')   return '🎠 Pre-Primary';
+    if (g === '1st' || g === '2nd') return '🎠 Pre-Primary';
+    if (g === '3rd' || g === '4th' || g === '5th') return '📘 Primary';
+    if (g === '6th' || g === '7th' || g === '8th') return '🎓 Junior';
+    return className || grade || '—';
+  }
+
+  function toggleDisplayModeCheckin() {
+    var newMode = window._displayMode === 'grade' ? 'class' : 'grade';
+    window._displayMode = newMode;
+    localStorage.setItem('vbs_display_mode', newMode);
+    renderClassGrid();
+    // Update button
+    var btn = document.getElementById('ci-dm-toggle');
+    if (btn) {
+      var isClass = newMode === 'class';
+      btn.innerHTML =
+        '<span class="dm-opt' + (!isClass ? ' dm-active' : '') + '">📋 Grade</span>' +
+        '<span class="dm-sep">|</span>' +
+        '<span class="dm-opt' + (isClass  ? ' dm-active' : '') + '">🏫 Class</span>';
+    }
+  }
+
+  function initCheckinToggle() {
+    var btn = document.getElementById('ci-dm-toggle');
+    if (!btn) return;
+    var isClass = window._displayMode === 'class';
+    btn.innerHTML =
+      '<span class="dm-opt' + (!isClass ? ' dm-active' : '') + '">📋 Grade</span>' +
+      '<span class="dm-sep">|</span>' +
+      '<span class="dm-opt' + (isClass  ? ' dm-active' : '') + '">🏫 Class</span>';
+  }
+  const SCRIPT_URL   = 'https://pypaonline.org/vbs/api.php';
+  /* ── LOAD ACTIVE DAYS FROM ADMIN SETTINGS ── */
+  async function loadDaySettings() {
+    const sel = document.getElementById('day-drop');
+    if (!sel) return;
+    try {
+      const res  = await fetch(SCRIPT_URL + '?action=getSettings&token=' + encodeURIComponent(PIN || '') + '&t=' + Date.now());
+      const json = await res.json();
+      const s    = json.settings || {};
+      const days = [
+        { val: '1', label: 'Day 1 · July 9 (Thu)',  key: 'day1_enabled' },
+        { val: '2', label: 'Day 2 · July 10 (Fri)', key: 'day2_enabled' },
+        { val: '3', label: 'Day 3 · July 11 (Sat)', key: 'day3_enabled' },
+      ];
+      const prevVal = sel.value;
+      [...sel.options].forEach(o => { if (o.value !== '0') o.remove(); });
+      if (sel.options[0]) sel.options[0].textContent = '📅 Select a day…';
+      let anyEnabled = false;
+      days.forEach(d => {
+        if (s[d.key] === '1') {
+          const opt = document.createElement('option');
+          opt.value = d.val; opt.textContent = d.label;
+          sel.appendChild(opt); anyEnabled = true;
+        }
+      });
+      if (!anyEnabled) {
+        const opt = document.createElement('option');
+        opt.value = ''; opt.disabled = true;
+        opt.textContent = '⏳ No days enabled — check admin panel';
+        sel.appendChild(opt);
+      }
+      if (prevVal && prevVal !== '0') {
+        const stillExists = [...sel.options].find(o => o.value === prevVal && !o.disabled);
+        sel.value = stillExists ? prevVal : '0';
+      }
+    } catch(e) {
+      console.warn('loadDaySettings failed, showing all days', e);
+      const days = [['1','Day 1 · July 9 (Thu)'],['2','Day 2 · July 10 (Fri)'],['3','Day 3 · July 11 (Sat)']];
+      [...sel.options].forEach(o => { if (o.value !== '0') o.remove(); });
+      days.forEach(([v,l]) => { const o = document.createElement('option'); o.value=v; o.textContent=l; sel.appendChild(o); });
+    }
+  }
+
+  const CSV_KIDS     = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQI-vHJhZBtLtBBn94Eq_0beJYuNhywqgP4dpgpd0sjPfvPzgnLq8NtAAQvYTmN_0OBFpb7X1q-G20Y/pub?output=csv";
+  // Reads use PHP/MySQL API
+
+  const GRADE_CLASS = {
+    'Pre':'Pre-K', 'K':'Kindergarten', '1st':'1st Grade', '2nd':'2nd Grade',
+    '3rd':'3rd Grade', '4th':'4th Grade', '5th':'5th Grade', '6th':'6th Grade',
+    '7th':'7th Grade', '8th':'8th Grade'
+  };
+  const CLASS_EMOJI = {
+    'Pre-K':'🎈','Kindergarten':'🌟','1st Grade':'📚','2nd Grade':'✏️',
+    '3rd Grade':'🚀','4th Grade':'⚽','5th Grade':'🔥','6th Grade':'🎨',
+    '7th Grade':'👑','8th Grade':'🏆'
+  };
+
+  /* ── STATE ── */
+  let allKids    = [];
+  let checkedIn  = {}; // key: childName+day -> record
+  let selectedDay = 0;
+  let pendingKid  = null;
+  let _checkinsLoading = false;
+
+  /* ── DETECT EMBED MODE (inside Command Center iframe) ── */
+  var _isEmbed = false;
+  var _urlParams = new URLSearchParams(window.location.search);
+  if (_urlParams.get('embed') === '1') {
+    _isEmbed = true;
+  }
+  // Inject embed CSS — compact toolbar: hide branding, center controls
+  (function() {
+    var s = document.createElement('style');
+    s.textContent = _isEmbed
+      ? '.header-left { display: none !important; }' +
+        '.header { padding: 8px 16px; justify-content: center; background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); }' +
+        '.day-selector { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; width: 100%; }' +
+        '.pin-screen { display: none !important; }' +
+        '@media(max-width:480px) { .day-selector { gap: 6px; } .day-drop { font-size: .78rem; padding: 7px 28px 7px 12px; } .display-mode-toggle { font-size: .7rem; padding: 4px 10px; } }'
+      : '';
+    document.head.appendChild(s);
+  })();
+
+  /* ── AUTH — token from URL param (embed) or sessionStorage (shared Command Center session) ── */
+  async function loadPIN() {
+    // 1. Check URL param token (embed mode from Command Center)
+    var tokenFromUrl = _urlParams.get('token');
+    // 2. Check shared session token (direct access while logged into Command Center)
+    var tokenFromSession = sessionStorage.getItem('vbs_token');
+    // 3. Legacy: check old checkin-specific token
+    var tokenLegacy = sessionStorage.getItem('vbs_checkin_token');
+
+    var tokenToTry = tokenFromUrl || tokenFromSession || tokenLegacy;
+    var savedUser = sessionStorage.getItem('vbs_checkin_user') || sessionStorage.getItem('vbs_dash_user');
+    if (savedUser) { try { currentUser = JSON.parse(savedUser); } catch(e) {} }
+
+    if (tokenToTry) {
+      try {
+        const res  = await fetch(SCRIPT_URL + '?action=validateToken&token=' + encodeURIComponent(tokenToTry) + '&t=' + Date.now());
+        const json = await res.json();
+        if (json.status === 'ok' && json.user.panels && json.user.panels.includes('checkin')) {
+          PIN = tokenToTry;
+          currentUser = { username: json.user.username, display_name: json.user.display_name || json.user.username };
+          userGroups = json.user.groups || [];
+          document.getElementById('pin-screen').style.display = 'none';
+          document.getElementById('app').style.display = 'block';
+          if (!_isEmbed) showUserHeader();
+          if (!_isEmbed) resetIdleTimer();
+          // Show warning if no groups assigned
+          if (userGroups.length === 0) {
+            document.getElementById('group-warn').style.display = 'block';
+          }
+          // Load day settings NOW (after PIN is set so token auth works)
+          loadDaySettings();
+          setInterval(async () => {
+            await loadDaySettings();
+            const sel = document.getElementById('day-drop');
+            if (sel && sel.value !== '0' && sel.value !== '') {
+              const selectedOpt = [...sel.options].find(o => o.value === sel.value && !o.disabled);
+              if (!selectedOpt) {
+                sel.value = '0';
+                selectedDay = 0;
+                alert('⚠️ The selected day has been disabled by admin. Please select a new day.');
+              }
+            }
+          }, 30000);
+          loadKids();
+          setInterval(loadCheckins, 15000);
+          return;
+        }
+      } catch(e) {}
+    }
+
+    // No valid token — if embedded, show error. If direct access, redirect to Command Center.
+    if (_isEmbed) {
+      document.getElementById('pin-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      document.querySelector('.main').innerHTML =
+        '<div style="text-align:center;padding:60px 24px">' +
+          '<div style="font-size:3rem;margin-bottom:12px">🔒</div>' +
+          '<div style="font-family:Fredoka One,cursive;font-size:1.3rem;color:#1A2744;margin-bottom:8px">Session Expired</div>' +
+          '<div style="font-size:.85rem;color:#7A8BAD">Please log out and log back in to the Command Center.</div>' +
+        '</div>';
+      return;
+    }
+    // Direct URL access without valid token — redirect to Command Center
+    window.location.href = 'index.html';
+  }
+
+  // doLogin is kept for backward compat but won't normally be shown
+  async function doLogin() {
+    // Redirect to Command Center for login
+    window.location.href = 'index.html';
+  }
+
+  /* ── DAY ── */
+  function setDay(d) {
+    selectedDay = d;
+    if (!d) return;
+    document.getElementById('day-warn').style.display = 'none';
+    document.getElementById('day-label').textContent = 'Day ' + d + ' · July ' + (8+d);
+    checkedIn = {};
+    _checkinsLoading = true;
+    updateCounters();
+    searchKids(document.getElementById('search-input').value);
+    loadCheckins();
+  }
+
+  /* ── CSV PARSER ── */
+  function parseCSV(text) {
+    const lines = text.trim().split('\n');
+    const headers = splitLine(lines[0]).map(h => h.trim().replace(/^"|"$/g, ''));
+    return lines.slice(1).filter(l => l.trim()).map(line => {
+      const vals = splitLine(line);
+      const obj = {};
+      headers.forEach((h, i) => obj[h] = (vals[i] || '').trim().replace(/^"|"$/g, ''));
+      return obj;
+    });
+  }
+  function splitLine(line) {
+    const r = []; let c = '', q = false;
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === '"') { q = !q; }
+      else if (line[i] === ',' && !q) { r.push(c); c = ''; }
+      else c += line[i];
+    }
+    r.push(c); return r;
+  }
+
+  /* ── LOAD KIDS ── */
+  async function loadKids() {
+    try {
+      const res = await fetch(CSV_KIDS + '&t=' + Date.now());
+      const rows = parseCSV(await res.text());
+      allKids = [];
+      rows.forEach(r => {
+        const p = r["Parent's Full Name"] || '';
+        const phone = r["Phone Number"] || r["Phone"] || r["phone"] || '';
+        const add = (n, g, gr, ts, al) => {
+          if (n && n.trim()) {
+            const grKey = Object.keys(GRADE_CLASS).find(k => gr && gr.includes(k)) || '';
+            allKids.push({
+              name: n.trim(), gender: g || '', grade: gr || '',
+              className: GRADE_CLASS[grKey] || gr || 'Unknown',
+              tshirt: ts || '', allergies: al || 'None',
+              parent: p, phone: phone
+            });
+          }
+        };
+        add(r["Child #1 Name"], r["Gender"],    r["Grade in Spetmber"],    r["T Shirt Size"],    r["Allergies"]);
+        add(r["Child #2 Name"], r["Gender (1)"], r["Grade in Spetmber (1)"], r["T Shirt Size (1)"], r["Allergies (1)"]);
+        add(r["Child #3 Name"], r["Gender (2)"], r["Grade in Spetmber (2)"], r["T Shirt Size (2)"], r["Allergies (2)"]);
+      });
+    } catch(e) { console.error('Failed to load kids:', e); }
+  }
+
+  /* ── LOAD CHECK-INS — from MySQL via PHP ── */
+  async function loadCheckins() {
+    if (!selectedDay) return;
+    _checkinsLoading = true;
+    try {
+      const url = SCRIPT_URL + '?action=read&secret=' + encodeURIComponent(PIN) + '&day=' + selectedDay + '&t=' + Date.now();
+      const res  = await fetch(url);
+      const json = await res.json();
+      if (checkAuthResponse(json)) { _checkinsLoading = false; return; }
+      if (json.status !== 'ok') { _checkinsLoading = false; return; }
+      const dbState = {};
+      json.data.forEach(r => {
+        const mapped = {
+          Id:           r.id,
+          ChildName:    r.child_name,
+          ClassName:    r.class_name,
+          Grade:        r.grade,
+          Parent:       r.parent,
+          Phone:        r.phone,
+          Allergies:    r.allergies,
+          CheckinTime:  r.checkin_time  || '',
+          CheckoutTime: r.checkout_time || '',
+          CheckinBy:    r.checkin_by,
+          CheckoutBy:   r.checkout_by,
+          LanyardBack:  r.lanyard_back,
+          Day:          r.day
+        };
+        // Keep only the record with the highest DB id per child (handles re-entry).
+        // Cannot rely on array order — checkin_time is a string so "9:26 PM" > "10:21 PM" alphabetically.
+        if (!dbState[mapped.ChildName] || mapped.Id > dbState[mapped.ChildName].Id) {
+          dbState[mapped.ChildName] = mapped;
+        }
+      });
+      Object.assign(checkedIn, dbState);
+      Object.keys(checkedIn).forEach(k => { if (!dbState[k]) delete checkedIn[k]; });
+      _checkinsLoading = false;
+      updateCounters();
+      searchKids(document.getElementById('search-input').value);
+    } catch(e) { _checkinsLoading = false; console.error('Failed to load checkins:', e); }
+  }
+
+  /* ── COUNTERS ── */
+  const CLASSES = [
+    {name:'Pre-K',  emoji:'🎈', key:'Pre-K'},
+    {name:'Kinder', emoji:'🌟', key:'Kindergarten'},
+    {name:'1st',    emoji:'📚', key:'1st Grade'},
+    {name:'2nd',    emoji:'✏️', key:'2nd Grade'},
+    {name:'3rd',    emoji:'🚀', key:'3rd Grade'},
+    {name:'4th',    emoji:'⚽', key:'4th Grade'},
+    {name:'5th',    emoji:'🔥', key:'5th Grade'},
+    {name:'6th',    emoji:'🎨', key:'6th Grade'},
+    {name:'7th',    emoji:'👑', key:'7th Grade'},
+    {name:'8th',    emoji:'🏆', key:'8th Grade'}
+  ];
+
+  function isOut(r) { return r.CheckoutTime && String(r.CheckoutTime).trim() !== ''; }
+
+  function updateCounters() {
+    var allowedClasses = getAllowedClasses();
+    var all = Object.values(checkedIn).filter(function(r) {
+      return !allowedClasses || allowedClasses.indexOf(r.ClassName) !== -1;
+    });
+    const inCount  = all.length;
+    const outCount = all.filter(r => isOut(r)).length;
+    document.getElementById('cnt-in').textContent     = inCount;
+    document.getElementById('cnt-out').textContent    = outCount;
+    document.getElementById('cnt-inside').textContent = inCount - outCount;
+    renderClassGrid();
+  }
+
+  function renderClassGrid() {
+    const grid = document.getElementById('class-grid');
+    if (!grid) return;
+    const displayMode = window._displayMode || 'grade';
+
+    const CLASS_GROUPS = [
+      { name:'Pre-K',       emoji:'🎈', key:'Pre-K',       keys:['Pre-K'] },
+      { name:'Pre-Primary', emoji:'🎠', key:'Pre-Primary', keys:['Kindergarten','1st Grade','2nd Grade'] },
+      { name:'Primary',     emoji:'📘', key:'Primary',     keys:['3rd Grade','4th Grade','5th Grade'] },
+      { name:'Junior',      emoji:'🎓', key:'Junior',      keys:['6th Grade','7th Grade','8th Grade'] }
+    ];
+
+    // Filter chips to only the groups/grades this user is assigned to
+    var fullList = displayMode === 'class' ? CLASS_GROUPS : CLASSES;
+    var allowedClasses = getAllowedClasses(); // null = no filter
+    var chipList = allowedClasses
+      ? fullList.filter(function(cls) {
+          if (displayMode === 'class') {
+            // cls.keys = array of individual class names in this group
+            return cls.keys.some(function(k) { return allowedClasses.indexOf(k) !== -1; });
+          } else {
+            return allowedClasses.indexOf(cls.key) !== -1;
+          }
+        })
+      : fullList;
+
+    grid.innerHTML = chipList.map(function(cls) {
+      const kids = displayMode === 'class'
+        ? Object.values(checkedIn).filter(function(r) { return cls.keys.indexOf(r.ClassName) !== -1; })
+        : Object.values(checkedIn).filter(function(r) { return r.ClassName === cls.key; });
+      const inCnt  = kids.length;
+      const outCnt = kids.filter(function(r){ return isOut(r); }).length;
+      const rem    = inCnt - outCnt;
+      const numsHtml = inCnt > 0
+        ? '<div class="cc-nums">'
+          + '<span class="cc-in" title="Arrived" onclick="event.stopPropagation();showClassModal(this)">'  + inCnt  + '↓</span>'
+          + '<span class="cc-out" title="Gone Home" onclick="event.stopPropagation();showClassModal(this)">'+outCnt + '↑</span>'
+          + '<span class="cc-rem" title="Still Inside" onclick="event.stopPropagation();showClassModal(this)">' + rem + '●</span>'
+          + '</div>'
+        : '<div class="cc-nums"><span style="font-size:.65rem;color:var(--muted)">—</span></div>';
+      return '<div class="class-chip' + (inCnt > 0 ? ' has-kids' : '') + '"'
+        + ' data-class="' + cls.key + '"'
+        + ' data-label="' + cls.emoji + ' ' + cls.name + '"'
+        + ' onclick="showClassModal(this)"'
+        + ' style="cursor:pointer">'
+        + '<div class="cc-emoji">' + cls.emoji + '</div>'
+        + '<div class="cc-name">' + cls.name + '</div>'
+        + numsHtml
+        + '</div>';
+    }).join('');
+  }
+
+  /* ── SEARCH ── */
+  function searchKids(query) {
+    const el = document.getElementById('results');
+    const q  = query.trim().toLowerCase();
+    if (!q) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Start typing to search</div><div class="empty-sub">Search by child\'s first or last name</div></div>';
+      return;
+    }
+    var allowedClasses = getAllowedClasses();
+    const found = allKids.filter(k =>
+      k.name.toLowerCase().includes(q) &&
+      (!allowedClasses || allowedClasses.indexOf(k.className) !== -1)
+    );
+    if (!found.length) {
+      el.innerHTML = '<div class="no-results">😕 No child found for "' + query + '"</div>';
+      return;
+    }
+    el.innerHTML = found.map(k => {
+      const alreadyIn = checkedIn[k.name];
+      const emoji = CLASS_EMOJI[k.className] || '🎒';
+      const allergyHtml = k.allergies && k.allergies !== 'None'
+        ? '<span class="allergy-tag">⚠️ ' + k.allergies + '</span>' : '';
+      if (alreadyIn && !alreadyIn.CheckoutTime) {
+        return '<div class="result-item already-in">' +
+          '<div class="result-info">' +
+            '<div class="result-name">' + k.name + '</div>' +
+            '<div class="result-meta">' + emoji + ' ' + k.className + ' · 👨‍👩‍👧 ' + k.parent + '</div>' +
+            (allergyHtml ? '<div>' + allergyHtml + '</div>' : '') +
+          '</div>' +
+          '<div class="already-badge">✅ Checked In</div>' +
+        '</div>';
+      }
+      return '<div class="result-item" onclick="openModal(' + JSON.stringify(k).replace(/"/g,"'") + ')">' +
+        '<div class="result-info">' +
+          '<div class="result-name">' + k.name + '</div>' +
+          '<div class="result-meta">' + emoji + ' ' + k.className + ' · 👨‍👩‍👧 ' + k.parent + '</div>' +
+          (allergyHtml ? '<div>' + allergyHtml + '</div>' : '') +
+        '</div>' +
+        '<span class="result-grade">' + (k.grade || '—') + '</span>' +
+        '<button class="checkin-btn" onclick="event.stopPropagation();openModalDirect(' + allKids.indexOf(k) + ')">Check In ✅</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  function openModalDirect(idx) { openModal(allKids[idx]); }
+
+  function openModal(kid) {
+    if (!selectedDay) {
+      document.getElementById('day-warn').style.display = 'block';
+      document.getElementById('day-warn').scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    pendingKid = kid;
+    const emoji = CLASS_EMOJI[kid.className] || '🎒';
+    document.getElementById('modal-title').textContent = 'Check In · ' + kid.name;
+    document.getElementById('modal-sub').textContent   = 'Day ' + selectedDay + ' · July ' + (8+selectedDay);
+    document.getElementById('modal-info').innerHTML =
+      row('👤 Child',  kid.name) +
+      row(emoji + ' Class', getClassGroupName(kid.grade, kid.className)) +
+      row('📚 Grade',  kid.grade || '—') +
+      row('👨‍👩‍👧 Parent', kid.parent) +
+      row('📞 Phone',  kid.phone || '—') +
+      row('👕 T-Shirt', kid.tshirt || '—');
+    document.getElementById('modal-allergy').innerHTML = kid.allergies && kid.allergies !== 'None'
+      ? '<div class="modal-allergy">⚠️ Allergy Alert: ' + kid.allergies + '</div>' : '';
+    document.getElementById('btn-confirm').disabled = false;
+    document.getElementById('btn-confirm').textContent = '✅ Confirm Check In';
+    document.getElementById('modal-overlay').classList.add('open');
+  }
+
+  function row(k, v) {
+    return '<div class="modal-row"><span class="modal-key">' + k + '</span><span class="modal-val">' + v + '</span></div>';
+  }
+
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+    pendingKid = null;
+  }
+
+  /* ── CONFIRM CHECK-IN ── */
+  async function confirmCheckin() {
+    if (!pendingKid) return;
+    const btn = document.getElementById('btn-confirm');
+    btn.disabled = true;
+    btn.textContent = '⏳ Checking in…';
+
+    const now  = new Date();
+    const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const payload = {
+      action:      'checkin',
+      secret:      PIN,
+      day:         selectedDay,
+      childName:   pendingKid.name,
+      className:   pendingKid.className,
+      grade:       pendingKid.grade,
+      parent:      pendingKid.parent,
+      phone:       pendingKid.phone,
+      allergies:   pendingKid.allergies,
+      checkinTime: time,
+      checkinBy:   currentUser.display_name
+    };
+
+    // POST and read response
+    let resp;
+    try {
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      resp = await res.json();
+      if (checkAuthResponse(resp)) return;
+    } catch(e) { console.error('Checkin error:', e); resp = { status: 'error', message: e.message }; }
+
+    btn.disabled = false;
+    btn.textContent = '✅ Confirm Check In';
+
+    // Save kid ref before closeModal() nulls pendingKid
+    const kidForOverride = pendingKid;
+
+    if (resp.status === 'already_in' && resp.checkedOut) {
+      closeModal();
+      openOverrideModal(kidForOverride, time);
+      return;
+    }
+    if (resp.status === 'already_in' && !resp.checkedOut) {
+      closeModal();
+      return;
+    }
+
+    // Success — update UI with correct PascalCase keys
+    checkedIn[pendingKid.name] = {
+      ChildName:    pendingKid.name,
+      ClassName:    pendingKid.className,
+      Grade:        pendingKid.grade,
+      Parent:       pendingKid.parent,
+      Phone:        pendingKid.phone,
+      Allergies:    pendingKid.allergies,
+      CheckinTime:  time,
+      CheckoutTime: '',
+      CheckinBy:    currentUser.display_name,
+      Day:          selectedDay
+    };
+    updateCounters();
+    showToast(pendingKid.name, pendingKid.className, time);
+    closeModal();
+    searchKids(document.getElementById('search-input').value);
+  }
+
+  /* ── TOAST ── */
+  function showToast(name, cls, time, prefix) {
+    const emoji = CLASS_EMOJI[cls] || '🎒';
+    document.getElementById('toast-name').textContent   = (prefix || '✅') + ' ' + name + ' checked in!';
+    document.getElementById('toast-detail').textContent = emoji + ' ' + cls + ' · ' + time;
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeModal(); closeOverrideModal(); }
+  });
+
+  /* ── OVERRIDE MODAL ── */
+  let overridePendingKid  = null;
+  let overridePendingTime = null;
+
+  function openOverrideModal(kid, time) {
+    overridePendingKid  = kid;
+    overridePendingTime = time;
+    const emoji = CLASS_EMOJI[kid.className] || '🎒';
+    document.getElementById('override-sub').textContent =
+      kid.name + ' was already checked in and out today. Admin PIN required for re-entry.';
+    document.getElementById('override-info').innerHTML =
+      '<div class="modal-row"><span class="modal-key">👤 Child</span><span class="modal-val">' + kid.name + '</span></div>' +
+      '<div class="modal-row"><span class="modal-key">' + emoji + ' Class</span><span class="modal-val">' + getClassGroupName(kid.grade, kid.className) + '</span></div>' +
+      '<div class="modal-row"><span class="modal-key">📅 Day</span><span class="modal-val">Day ' + selectedDay + ' · July ' + (8 + selectedDay) + '</span></div>';
+    document.getElementById('override-pin-input').value = '';
+    document.getElementById('override-err').textContent = '';
+    document.getElementById('btn-override-confirm').disabled = false;
+    document.getElementById('btn-override-confirm').textContent = '🔐 Confirm Re-Entry';
+    document.getElementById('override-overlay').classList.add('open');
+    setTimeout(() => document.getElementById('override-pin-input').focus(), 150);
+  }
+
+  function closeOverrideModal() {
+    document.getElementById('override-overlay').classList.remove('open');
+    overridePendingKid  = null;
+    overridePendingTime = null;
+  }
+
+  async function submitOverride() {
+    if (!overridePendingKid) return;
+    const adminPin = document.getElementById('override-pin-input').value.trim();
+    const errEl    = document.getElementById('override-err');
+    const btn      = document.getElementById('btn-override-confirm');
+    if (!adminPin) { errEl.textContent = '⚠️ Enter the admin PIN.'; return; }
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Verifying…';
+    errEl.textContent = '';
+
+    const time = overridePendingTime;
+    const payload = {
+      action:      'checkin',
+      secret:      PIN,
+      day:         selectedDay,
+      childName:   overridePendingKid.name,
+      className:   overridePendingKid.className,
+      grade:       overridePendingKid.grade,
+      parent:      overridePendingKid.parent,
+      phone:       overridePendingKid.phone,
+      allergies:   overridePendingKid.allergies,
+      checkinTime: time,
+      checkinBy:   currentUser.display_name + ' (Re-Entry)',
+      override:    true,
+      adminKey:    adminPin
+    };
+
+    try {
+      const res  = await fetch(SCRIPT_URL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+      const resp = await res.json();
+      if (checkAuthResponse(resp)) return;
+
+      if (resp.status === 'ok') {
+        closeOverrideModal();
+        await loadCheckins();
+        showToast(overridePendingKid.name, overridePendingKid.className, time, '🔄 Re-Entry');
+        searchKids(document.getElementById('search-input').value);
+      } else if (resp.message === 'Invalid admin PIN') {
+        errEl.textContent = '❌ Wrong admin PIN. Try again.';
+        document.getElementById('override-pin-input').value = '';
+        btn.disabled = false;
+        btn.textContent = '🔐 Confirm Re-Entry';
+      } else {
+        errEl.textContent = '❌ ' + (resp.message || 'Something went wrong.');
+        btn.disabled = false;
+        btn.textContent = '🔐 Confirm Re-Entry';
+      }
+    } catch(e) {
+      errEl.textContent = '⚠️ Network error. Try again.';
+      btn.disabled = false;
+      btn.textContent = '🔐 Confirm Re-Entry';
+    }
+  }
+
+  // ── FILTER MODAL ──
+  function showFilterModal(filter) {
+    if (!selectedDay) {
+      document.getElementById('day-warn').style.display = 'block';
+      document.getElementById('day-warn').scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    const titles = { all: 'Arrived Today', out: 'Gone Home ✅', inside: 'Still Inside 🏠' };
+    document.getElementById('fm-title').textContent = titles[filter];
+    document.getElementById('fm-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    if (_checkinsLoading) {
+      document.getElementById('fm-list').innerHTML = '<div class="fm-empty"><div class="spin" style="font-size:1.5rem">⏳</div><div style="margin-top:8px">Loading attendance data…</div></div>';
+      return;
+    }
+
+    var allowedClasses = getAllowedClasses();
+    const all = Object.values(checkedIn).filter(function(r) {
+      return !allowedClasses || allowedClasses.indexOf(r.ClassName) !== -1;
+    });
+    if (!all.length) {
+      document.getElementById('fm-list').innerHTML = '<div class="fm-empty">No kids checked in yet for Day ' + selectedDay + '</div>';
+      return;
+    }
+    let kids = all;
+    if (filter === 'out')    kids = all.filter(r =>  r.CheckoutTime && r.CheckoutTime.trim());
+    if (filter === 'inside') kids = all.filter(r => !r.CheckoutTime || !r.CheckoutTime.trim());
+
+    if (!kids.length) {
+      document.getElementById('fm-list').innerHTML = '<div class="fm-empty">No kids in this category</div>';
+    } else {
+      document.getElementById('fm-list').innerHTML = kids.map(function(r) {
+        const emoji = CLASS_EMOJI[r.ClassName] || '🎒';
+        const isOut = r.CheckoutTime && r.CheckoutTime.trim();
+        const badge = isOut
+          ? '<div class="fm-badge-out">✅ ' + r.CheckoutTime + '</div>'
+          : '<div class="fm-badge-in">🏠 Inside</div>';
+        return '<div class="fm-row">' +
+          '<div class="fm-avatar">' + emoji + '</div>' +
+          '<div style="flex:1;min-width:0"><div class="fm-name">' + r.ChildName + '</div>' +
+          '<div class="fm-meta">' + r.ClassName + (r.Parent ? ' · 👨‍👩‍👧 ' + r.Parent : '') + '</div>' +
+          (r.Allergies && r.Allergies !== 'None' ? '<div style="margin-top:3px"><span class="allergy-tag">⚠️ ' + r.Allergies + '</span></div>' : '') +
+          '</div>' +
+          badge + '</div>';
+      }).join('');
+    }
+  }
+
+  function closeFilterModal() {
+    document.getElementById('fm-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function showClassModal(el) {
+    // Walk up to the chip to get data attributes
+    const chip = el.closest ? el.closest('.class-chip') : el;
+    const classKey   = chip.dataset.class;
+    const classLabel = chip.dataset.label;
+    // Determine filter from which span was clicked
+    let filter = 'all';
+    if (el.classList && el.classList.contains('cc-out'))    filter = 'out';
+    if (el.classList && el.classList.contains('cc-rem'))    filter = 'inside';
+    if (!selectedDay) {
+      document.getElementById('day-warn').style.display = 'block';
+      document.getElementById('day-warn').scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    const filterLabels = { all: 'Arrived Today', out: 'Gone Home ✅', inside: 'Still Inside 🏠' };
+    document.getElementById('fm-title').textContent = classLabel + ' · ' + filterLabels[filter];
+    document.getElementById('fm-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    if (_checkinsLoading) {
+      document.getElementById('fm-list').innerHTML = '<div class="fm-empty"><div class="spin" style="font-size:1.5rem">⏳</div><div style="margin-top:8px">Loading attendance data…</div></div>';
+      return;
+    }
+
+    // In class view, a chip key like 'Pre-Primary' maps to multiple classNames
+    const CLASS_GROUP_KEYS = {
+      'Pre-Primary': ['Kindergarten','1st Grade','2nd Grade'],
+      'Primary':     ['3rd Grade','4th Grade','5th Grade'],
+      'Junior':      ['6th Grade','7th Grade','8th Grade']
+    };
+    const groupKeys = CLASS_GROUP_KEYS[classKey];
+    const all = Object.values(checkedIn).filter(r =>
+      groupKeys ? groupKeys.indexOf(r.ClassName) !== -1 : r.ClassName === classKey
+    );
+    let kids = all;
+    if (filter === 'out')    kids = all.filter(r =>  r.CheckoutTime && r.CheckoutTime.trim());
+    if (filter === 'inside') kids = all.filter(r => !r.CheckoutTime || !r.CheckoutTime.trim());
+
+    if (!kids.length) {
+      document.getElementById('fm-list').innerHTML = '<div class="fm-empty">No kids in this category</div>';
+    } else {
+      document.getElementById('fm-list').innerHTML = kids.map(function(r) {
+        const isOut = r.CheckoutTime && r.CheckoutTime.trim();
+        const badge = isOut
+          ? '<div class="fm-badge-out">✅ ' + r.CheckoutTime + '</div>'
+          : '<div class="fm-badge-in">🏠 Inside</div>';
+        return '<div class="fm-row">' +
+          '<div class="fm-avatar">' + (CLASS_EMOJI[r.ClassName] || '🎒') + '</div>' +
+          '<div style="flex:1;min-width:0"><div class="fm-name">' + r.ChildName + '</div>' +
+          '<div class="fm-meta">' + (r.Parent ? '👨‍👩‍👧 ' + r.Parent : '') + (r.CheckinTime ? ' · ✅ ' + r.CheckinTime : '') + '</div>' +
+          (r.Allergies && r.Allergies !== 'None' ? '<div style="margin-top:3px"><span class="allergy-tag">⚠️ ' + r.Allergies + '</span></div>' : '') +
+          '</div>' +
+          badge + '</div>';
+      }).join('');
+    }
+  }
+
+  document.getElementById('fm-overlay').addEventListener('click', function(e) {
+    if (e.target === this) closeFilterModal();
+  });
+
+  // Load PIN from sheet on startup
+  loadPIN();
+  initCheckinToggle();
+
+  async function manualRefresh() {
+    const btn = document.getElementById('refresh-btn');
+    btn.classList.add('spinning');
+    btn.disabled = true;
+    await Promise.all([loadKids(), loadCheckins()]);
+    searchKids(document.getElementById('search-input').value);
+    btn.classList.remove('spinning');
+    btn.disabled = false;
+    document.getElementById('day-label').textContent =
+      selectedDay ? 'Day ' + selectedDay + ' · July ' + (8+selectedDay) + ' · Updated ' + new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : 'Updated ' + new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  }
+
+  /* ── AUTH FAILURE HANDLER ── */
+  function checkAuthResponse(json) {
+    if (json && json.status === 'error' && json.message === 'Unauthorized') {
+      doLogout();
+      return true;
+    }
+    return false;
+  }
+
+  /* ── LOGOUT ── */
+  async function doLogout() {
+    // If embedded, tell parent to logout
+    if (_isEmbed) {
+      try { window.parent.doDashLogout(); } catch(e) {}
+      return;
+    }
+    // Direct access — redirect to Command Center
+    PIN = null;
+    stopIdleTimer();
+    window.location.href = 'index.html';
+  }
+
+  /* ── SHOW USER IN HEADER ── */
+  function showUserHeader() {
+    const el = document.getElementById('user-display');
+    const lbl = document.getElementById('user-name-label');
+    if (el && lbl) {
+      lbl.textContent = '👤 ' + (currentUser.display_name || currentUser.username);
+      el.style.display = 'flex';
+    }
+  }
+
+  /* ── IDLE TIMEOUT (15 min) ── */
+  const IDLE_TIMEOUT  = 15 * 60 * 1000; // 15 min
+  const WARN_BEFORE   = 60 * 1000;       // warn 60s before
+  let idleTimer       = null;
+  let countdownTimer  = null;
+  let idleCountdown   = 60;
+
+  function resetIdleTimer() {
+    clearTimeout(idleTimer);
+    clearInterval(countdownTimer);
+    document.getElementById('idle-warning').style.display = 'none';
+    idleCountdown = 60;
+    if (PIN) {
+      idleTimer = setTimeout(showIdleWarning, IDLE_TIMEOUT - WARN_BEFORE);
+    }
+  }
+
+  function showIdleWarning() {
+    if (!PIN) return;
+    document.getElementById('idle-warning').style.display = 'flex';
+    idleCountdown = 60;
+    document.getElementById('idle-countdown').textContent = idleCountdown;
+    countdownTimer = setInterval(function() {
+      idleCountdown--;
+      document.getElementById('idle-countdown').textContent = idleCountdown;
+      if (idleCountdown <= 0) {
+        clearInterval(countdownTimer);
+        doLogout();
+      }
+    }, 1000);
+  }
+
+  function stopIdleTimer() {
+    clearTimeout(idleTimer);
+    clearInterval(countdownTimer);
+    document.getElementById('idle-warning').style.display = 'none';
+  }
+
+  // Track user activity
+  ['mousemove','keydown','mousedown','touchstart','scroll'].forEach(function(evt) {
+    document.addEventListener(evt, resetIdleTimer, { passive: true });
+  });
+
+</script>
+  <!-- IDLE TIMEOUT WARNING -->
+  <div id="idle-warning" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:white;border-radius:20px;padding:32px 28px;text-align:center;max-width:340px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+      <div style="font-size:2.5rem;margin-bottom:12px">⏰</div>
+      <div style="font-family:Fredoka One,cursive;font-size:1.3rem;color:#1A2744;margin-bottom:8px">Still there?</div>
+      <div style="font-size:.85rem;color:#64748b;margin-bottom:20px">You'll be logged out in <span id="idle-countdown" style="font-weight:800;color:#EF4444">60</span> seconds due to inactivity.</div>
+      <button onclick="resetIdleTimer()"
+        style="background:#1A2744;color:white;border:none;border-radius:10px;padding:12px 32px;font-size:.9rem;font-weight:800;cursor:pointer;width:100%">
+        ✅ I'm still here
+      </button>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VBS 2026 — 🎽 Merch Station</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FFF7ED;
+    --card: #FFFFFF;
+    --primary: #7C3AED;
+    --primary-light: #EDE9FE;
+    --green: #15803D;
+    --green-light: #DCFCE7;
+    --amber: #D97706;
+    --red: #EF4444;
+    --text: #1A2744;
+    --muted: #7A8BAD;
+    --border: #E2E8F0;
+    --radius: 14px;
+    --shadow: 0 4px 24px rgba(124,58,237,.08);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ── HEADER ── */
+  .header { background: linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%); color: white; }
+  .header-branding { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px 10px; }
+  .header-title { font-family: 'Fredoka One', cursive; font-size: 1.4rem; }
+  .header-sub   { font-size: .75rem; opacity: .8; margin-top: 2px; }
+  .header-controls { padding: 0 24px 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .header-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
+    border-radius: 8px; padding: 6px 14px; color: rgba(255,255,255,.9);
+    font-size: .78rem; font-weight: 800; cursor: pointer; font-family: 'Nunito', sans-serif;
+    transition: background .15s; white-space: nowrap; text-decoration: none;
+  }
+  .header-btn:hover { background: rgba(255,255,255,.25); }
+
+  /* ── STATS BAR ── */
+  .stats-bar {
+    background: white; border-bottom: 1px solid var(--border);
+    padding: 10px 20px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  }
+  .stat-pill { display: flex; align-items: center; gap: 7px; padding: 6px 14px; border-radius: 20px; }
+  .stat-pill.purple { background: #EDE9FE; border: 1.5px solid #C4B5FD; }
+  .stat-pill.green  { background: #DCFCE7; border: 1.5px solid #86EFAC; }
+  .stat-pill.amber  { background: #FFFBEB; border: 1.5px solid #FCD34D; }
+  .stat-num { font-family: 'Fredoka One', cursive; font-size: 1.2rem; line-height: 1; }
+  .stat-pill.purple .stat-num { color: #7C3AED; }
+  .stat-pill.green  .stat-num { color: #15803D; }
+  .stat-pill.amber  .stat-num { color: #D97706; }
+  .stat-lbl { font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); }
+
+  /* ── MAIN ── */
+  .main { max-width: 720px; margin: 0 auto; padding: 24px 16px; }
+
+  /* ── SEARCH + FILTER ── */
+  .toolbar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .search-wrap { position: relative; flex: 1; min-width: 180px; }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1rem; }
+  .search-input {
+    width: 100%; padding: 10px 12px 10px 38px; font-size: .92rem;
+    border: 2px solid var(--border); border-radius: 10px; font-family: 'Nunito', sans-serif;
+    font-weight: 700; outline: none; transition: border-color .2s; background: white;
+  }
+  .search-input:focus { border-color: var(--primary); }
+  .filter-tabs { display: flex; gap: 6px; }
+  .filter-tab {
+    padding: 8px 14px; border-radius: 20px; border: 2px solid var(--border);
+    background: white; font-weight: 800; font-family: 'Nunito', sans-serif;
+    font-size: .78rem; cursor: pointer; color: var(--muted); transition: all .15s;
+  }
+  .filter-tab.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary); }
+
+  /* ── VOLUNTEER LIST ── */
+  .vol-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
+  .vol-row {
+    background: white; border: 2px solid var(--border); border-radius: var(--radius);
+    padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+    transition: all .2s;
+  }
+  .vol-row.received { background: #F0FDF4; border-color: #86EFAC; }
+  .vol-row.walkin   { background: #FEF9FF; border-color: #C4B5FD; }
+  .vol-avatar {
+    width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-weight: 800; font-size: 1rem; flex-shrink: 0; color: white;
+  }
+  .vol-name  { font-weight: 800; font-size: .95rem; }
+  .vol-meta  { font-size: .75rem; color: var(--muted); margin-top: 2px; }
+  .vol-time  { font-size: .7rem; color: var(--green); font-weight: 700; margin-top: 2px; }
+  .shirt-badge {
+    padding: 3px 10px; border-radius: 20px; font-size: .72rem; font-weight: 800;
+    background: var(--primary-light); color: var(--primary); white-space: nowrap; flex-shrink: 0;
+  }
+  .walkin-badge {
+    padding: 3px 10px; border-radius: 20px; font-size: .68rem; font-weight: 800;
+    background: #FEF3C7; color: #92400E; white-space: nowrap;
+  }
+  .check-btn {
+    margin-left: auto; width: 42px; height: 42px; border-radius: 50%; border: 2.5px solid var(--border);
+    background: white; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; transition: all .2s; flex-shrink: 0;
+  }
+  .check-btn.done { background: var(--green); border-color: var(--green); cursor: default; }
+
+  /* ── WALK-IN FORM ── */
+  .walkin-card {
+    background: white; border: 2px solid #C4B5FD; border-radius: var(--radius);
+    padding: 20px 20px; margin-bottom: 20px;
+  }
+  .walkin-title { font-family: 'Fredoka One', cursive; font-size: 1rem; color: var(--primary); margin-bottom: 14px; }
+  .walkin-grid  { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; }
+  .field-wrap label { font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); display: block; margin-bottom: 4px; }
+  .field-input, .field-select {
+    width: 100%; padding: 9px 12px; font-size: .88rem; border: 2px solid var(--border);
+    border-radius: 8px; font-family: 'Nunito', sans-serif; font-weight: 700; outline: none;
+    transition: border-color .2s; background: white;
+  }
+  .field-input:focus, .field-select:focus { border-color: var(--primary); }
+  .add-btn {
+    padding: 9px 18px; background: var(--primary); color: white; border: none;
+    border-radius: 8px; font-weight: 800; font-family: 'Nunito', sans-serif;
+    font-size: .85rem; cursor: pointer; white-space: nowrap; transition: opacity .2s;
+  }
+  .add-btn:hover { opacity: .88; }
+
+  /* ── EMPTY / LOADING ── */
+  .empty { text-align: center; padding: 40px 20px; color: var(--muted); font-weight: 700; font-size: .9rem; }
+  .spin  { display: inline-block; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px);
+    color: white; padding: 14px 24px; border-radius: 14px; font-weight: 800; font-size: .95rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,.2); transition: transform .4s cubic-bezier(.34,1.56,.64,1);
+    z-index: 999; text-align: center; min-width: 240px;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast-name   { font-family: 'Fredoka One', cursive; font-size: 1.1rem; }
+  .toast-detail { font-size: .78rem; opacity: .9; margin-top: 2px; }
+
+  @media (max-width: 520px) {
+    .header-branding { padding: 12px 16px 8px; }
+    .header-title    { font-size: 1.1rem; }
+    .header-controls { padding: 0 16px 10px; }
+    .main            { padding: 16px 12px; }
+    .walkin-grid     { grid-template-columns: 1fr 1fr; }
+    .walkin-grid .add-btn { grid-column: 1 / -1; }
+    .filter-tabs     { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<div id="app" style="display:none">
+  <header class="header">
+    <div class="header-branding">
+      <div>
+        <div class="header-title">🎽 Merch Station</div>
+        <div class="header-sub">VBS 2026 · T-Shirt Distribution · India Christian Assembly NJ</div>
+      </div>
+    </div>
+    <div class="header-controls">
+      <button class="header-btn" onclick="manualRefresh()">↻ Refresh</button>
+    </div>
+  </header>
+
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="stat-pill purple">
+      <span class="stat-num" id="cnt-total">—</span>
+      <span class="stat-lbl">Total</span>
+    </div>
+    <div class="stat-pill green">
+      <span class="stat-num" id="cnt-received">—</span>
+      <span class="stat-lbl">Received ✅</span>
+    </div>
+    <div class="stat-pill amber">
+      <span class="stat-num" id="cnt-pending">—</span>
+      <span class="stat-lbl">Pending ⏳</span>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- Walk-in form -->
+    <div class="walkin-card">
+      <div class="walkin-title">➕ Add Walk-in (Non-Volunteer)</div>
+      <div class="walkin-grid">
+        <div class="field-wrap">
+          <label>Full Name *</label>
+          <input class="field-input" id="walkin-name" type="text" placeholder="e.g. John Thomas" autocomplete="off">
+        </div>
+        <div class="field-wrap">
+          <label>T-Shirt Size</label>
+          <select class="field-select" id="walkin-size">
+            <option value="">— Select size —</option>
+            <option>XS</option><option>S</option><option>M</option><option>L</option>
+            <option>XL</option><option>XXL</option><option>3XL</option>
+            <option>S Youth</option><option>M Youth</option><option>L Youth</option>
+          </select>
+        </div>
+        <button class="add-btn" onclick="addWalkin()">➕ Add &amp; Mark Received</button>
+      </div>
+    </div>
+
+    <!-- Search + Filter -->
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="search-input" id="search-input" type="text"
+          placeholder="Search by name…" oninput="renderList()" autocomplete="off">
+      </div>
+      <div class="filter-tabs">
+        <button class="filter-tab active" id="tab-all"      onclick="setFilter('all',this)">All</button>
+        <button class="filter-tab"        id="tab-pending"  onclick="setFilter('pending',this)">⏳ Pending</button>
+        <button class="filter-tab"        id="tab-received" onclick="setFilter('received',this)">✅ Received</button>
+        <button class="filter-tab"        id="tab-walkin"   onclick="setFilter('walkin',this)">🚶 Walk-ins</button>
+      </div>
+    </div>
+
+    <!-- List -->
+    <div class="vol-list" id="vol-list">
+      <div class="empty"><span class="spin">⏳</span> Loading…</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div class="toast-name" id="toast-name"></div>
+  <div class="toast-detail" id="toast-detail"></div>
+</div>
+
+<script>
+  const SCRIPT_URL = 'https://pypaonline.org/vbs/api.php';
+  const CSV_VOLS   = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT1qao6oa4ze6Hzmy6q6DeltkBWYzgr8Dtp29zYROsFbjpxpOqNveYjU2cNbSbIVAfduJEYsrXh1v83/pub?output=csv';
+
+  let PIN         = null;
+  let currentUser = { display_name: '' };
+  let allEntries  = []; // merged: volunteers from CSV + walk-ins from DB
+  let dbRecords   = {}; // keyed by name: { received, tshirt_size, given_at, is_walkin, db_id }
+  let currentFilter = 'all';
+
+  /* ── EMBED MODE ── */
+  const _urlParams = new URLSearchParams(window.location.search);
+  const _isEmbed   = _urlParams.get('embed') === '1';
+
+  (function() {
+    const s = document.createElement('style');
+    s.textContent = _isEmbed
+      ? '.header-branding { display: none !important; } .header-controls { padding: 8px 16px; }'
+      : '';
+    document.head.appendChild(s);
+  })();
+
+  /* ── AUTH ── */
+  async function loadPIN() {
+    const tokenFromUrl     = _urlParams.get('token');
+    const tokenFromSession = sessionStorage.getItem('vbs_token');
+    const tokenToTry       = tokenFromUrl || tokenFromSession;
+
+    if (tokenToTry) {
+      try {
+        const res  = await fetch(SCRIPT_URL + '?action=validateToken&token=' + encodeURIComponent(tokenToTry) + '&t=' + Date.now());
+        const json = await res.json();
+        if (json.status === 'ok' && json.user.panels && json.user.panels.includes('checkin')) {
+          PIN         = tokenToTry;
+          currentUser = { display_name: json.user.display_name || json.user.username };
+          document.getElementById('app').style.display = 'block';
+          loadData();
+          return;
+        }
+      } catch(e) {}
+    }
+
+    if (_isEmbed) {
+      document.getElementById('app').style.display = 'block';
+      document.querySelector('.main').innerHTML =
+        '<div style="text-align:center;padding:60px 24px">' +
+          '<div style="font-size:3rem;margin-bottom:12px">🔒</div>' +
+          '<div style="font-family:Fredoka One,cursive;font-size:1.3rem;color:#1A2744;margin-bottom:8px">Session Expired</div>' +
+          '<div style="font-size:.85rem;color:#7A8BAD">Please log out and log back in to the Command Center.</div>' +
+        '</div>';
+      return;
+    }
+    window.location.href = 'index.html';
+  }
+
+  loadPIN();
+
+  /* ── LOAD DATA — CSV vols + DB distribution records in parallel ── */
+  async function loadData() {
+    document.getElementById('vol-list').innerHTML =
+      '<div class="empty"><span class="spin">⏳</span> Loading volunteers…</div>';
+    try {
+      const [csvVols, dbData] = await Promise.all([loadVolsCSV(), loadDBRecords()]);
+
+      // Merge: start with CSV volunteers
+      const merged = csvVols.map(function(v) {
+        return { name: v.name, tshirt_size: v.tshirt || '', is_walkin: false };
+      });
+
+      // Add walk-ins from DB that aren't in CSV
+      Object.values(dbData).forEach(function(r) {
+        if (r.is_walkin) {
+          merged.push({ name: r.name, tshirt_size: r.tshirt_size || '', is_walkin: true });
+        }
+      });
+
+      // Deduplicate by name (case-insensitive)
+      const seen = new Set();
+      allEntries = merged.filter(function(e) {
+        const key = e.name.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key); return true;
+      });
+
+      // Sort: pending first, then alphabetical within each group
+      allEntries.sort(function(a, b) {
+        const aRec = !!dbData[a.name.toLowerCase()];
+        const bRec = !!dbData[b.name.toLowerCase()];
+        if (aRec !== bRec) return aRec ? 1 : -1;
+        return a.name.localeCompare(b.name);
+      });
+
+      dbRecords = dbData;
+      updateStats();
+      renderList();
+    } catch(e) {
+      document.getElementById('vol-list').innerHTML =
+        '<div class="empty">⚠️ Could not load data. Check connection and refresh.</div>';
+    }
+  }
+
+  async function loadVolsCSV() {
+    const res  = await fetch(CSV_VOLS + '&t=' + Date.now());
+    const text = await res.text();
+    const rows = parseCSV(text);
+    const vols = [];
+    rows.forEach(function(r) {
+      const nameKey = Object.keys(r).find(function(h) {
+        return h.toLowerCase().includes("what's your name") || h.toLowerCase() === 'name';
+      });
+      const shirtKey = Object.keys(r).find(function(h) {
+        return h.toLowerCase().includes('t - shirt') || h.toLowerCase().includes('t-shirt') || h.toLowerCase().includes('shirt');
+      });
+      const name = nameKey ? r[nameKey].trim() : '';
+      if (name) vols.push({ name, tshirt: shirtKey ? r[shirtKey].trim() : '' });
+    });
+    return vols;
+  }
+
+  async function loadDBRecords() {
+    const res  = await fetch(SCRIPT_URL + '?action=tshirtRead&secret=' + encodeURIComponent(PIN) + '&t=' + Date.now());
+    const json = await res.json();
+    const map  = {};
+    if (json.status === 'ok') {
+      json.data.forEach(function(r) {
+        map[r.name.toLowerCase()] = {
+          db_id:      r.id,
+          name:       r.name,
+          tshirt_size: r.tshirt_size,
+          received:   !!parseInt(r.received),
+          given_at:   r.given_at || '',
+          given_by:   r.given_by || '',
+          is_walkin:  !!parseInt(r.is_walkin)
+        };
+      });
+    }
+    return map;
+  }
+
+  /* ── STATS ── */
+  function updateStats() {
+    const total    = allEntries.length;
+    const received = allEntries.filter(function(e) {
+      return dbRecords[e.name.toLowerCase()] && dbRecords[e.name.toLowerCase()].received;
+    }).length;
+    document.getElementById('cnt-total').textContent    = total;
+    document.getElementById('cnt-received').textContent = received;
+    document.getElementById('cnt-pending').textContent  = total - received;
+  }
+
+  /* ── RENDER LIST ── */
+  function setFilter(f, btn) {
+    currentFilter = f;
+    document.querySelectorAll('.filter-tab').forEach(function(t) { t.classList.remove('active'); });
+    btn.classList.add('active');
+    renderList();
+  }
+
+  function renderList() {
+    const q   = (document.getElementById('search-input').value || '').trim().toLowerCase();
+    const el  = document.getElementById('vol-list');
+
+    let filtered = allEntries.filter(function(e) {
+      if (q && !e.name.toLowerCase().includes(q)) return false;
+      const rec = dbRecords[e.name.toLowerCase()];
+      if (currentFilter === 'received') return rec && rec.received;
+      if (currentFilter === 'pending')  return !rec || !rec.received;
+      if (currentFilter === 'walkin')   return e.is_walkin;
+      return true;
+    });
+
+    if (!filtered.length) {
+      el.innerHTML = '<div class="empty">No results found</div>';
+      return;
+    }
+
+    el.innerHTML = filtered.map(function(e, idx) {
+      const rec      = dbRecords[e.name.toLowerCase()];
+      const received = rec && rec.received;
+      const isWalkin = e.is_walkin;
+      const size     = (rec && rec.tshirt_size) || e.tshirt_size || '';
+      const color    = stringToColor(e.name);
+      const initial  = e.name.charAt(0).toUpperCase();
+
+      const avatarHtml =
+        '<div class="vol-avatar" style="background:' + color + '">' + initial + '</div>';
+
+      const nameMeta =
+        '<div style="flex:1;min-width:0">' +
+          '<div class="vol-name">' + escHtml(e.name) + '</div>' +
+          '<div class="vol-meta">' +
+            (isWalkin ? '<span class="walkin-badge">🚶 Walk-in</span>&nbsp;' : '') +
+            (size ? '👕 ' + escHtml(size) : '<span style="color:var(--muted)">No size on file</span>') +
+          '</div>' +
+          (received && rec.given_at ? '<div class="vol-time">✅ Received at ' + rec.given_at + (rec.given_by ? ' · by ' + escHtml(rec.given_by) : '') + '</div>' : '') +
+        '</div>';
+
+      const checkBtn = received
+        ? '<div class="check-btn done" title="Received — only admin can undo" style="cursor:default">✅</div>'
+        : '<button class="check-btn" onclick="markReceived(' + idx + ')" title="Mark as received">⭕</button>';
+
+      return '<div class="vol-row' + (received ? ' received' : '') + (isWalkin ? ' walkin' : '') + '">' +
+        avatarHtml + nameMeta + checkBtn +
+      '</div>';
+    }).join('');
+
+    // Store filtered list for index lookup
+    window._filteredEntries = filtered;
+  }
+
+  /* ── MARK RECEIVED (user action only — undo is admin-only) ── */
+  async function markReceived(idx) {
+    const entry = window._filteredEntries[idx];
+    if (!entry) return;
+    const rec = dbRecords[entry.name.toLowerCase()];
+    if (rec && rec.received) return; // already received — do nothing
+    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    try {
+      const res  = await fetch(SCRIPT_URL, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          action: 'tshirtMark', secret: PIN,
+          name: entry.name, tshirtSize: entry.tshirt_size || (rec && rec.tshirt_size) || '',
+          givenBy: currentUser.display_name, isWalkin: entry.is_walkin ? 1 : 0
+        })
+      });
+      const json = await res.json();
+      if (json.status === 'ok') {
+        dbRecords[entry.name.toLowerCase()] = {
+          db_id: json.id, name: entry.name,
+          tshirt_size: entry.tshirt_size || '',
+          received: true, given_at: now,
+          given_by: currentUser.display_name,
+          is_walkin: entry.is_walkin
+        };
+        updateStats(); renderList();
+        showToast('✅ ' + entry.name, 'T-shirt marked as received · ' + now, '#15803D');
+      }
+    } catch(e) { showToast('⚠️ Error', 'Could not save. Try again.', '#EF4444'); }
+  }
+
+  /* ── ADD WALK-IN ── */
+  async function addWalkin() {
+    const nameEl = document.getElementById('walkin-name');
+    const sizeEl = document.getElementById('walkin-size');
+    const name   = nameEl.value.trim();
+    const size   = sizeEl.value.trim();
+    if (!name) { nameEl.focus(); nameEl.style.borderColor = '#EF4444'; return; }
+    nameEl.style.borderColor = '';
+
+    // Check duplicate
+    if (allEntries.some(function(e) { return e.name.toLowerCase() === name.toLowerCase(); })) {
+      showToast('⚠️ Already exists', name + ' is already in the list', '#D97706');
+      return;
+    }
+
+    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    try {
+      const res  = await fetch(SCRIPT_URL, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          action: 'tshirtMark', secret: PIN,
+          name: name, tshirtSize: size,
+          givenBy: currentUser.display_name, isWalkin: 1
+        })
+      });
+      const json = await res.json();
+      if (json.status === 'ok') {
+        allEntries.push({ name, tshirt_size: size, is_walkin: true });
+        dbRecords[name.toLowerCase()] = {
+          db_id: json.id, name,
+          tshirt_size: size, received: true,
+          given_at: now, given_by: currentUser.display_name,
+          is_walkin: true
+        };
+        nameEl.value = ''; sizeEl.value = '';
+        updateStats(); renderList();
+        showToast('✅ Walk-in added', name + (size ? ' · ' + size : ''), '#7C3AED');
+      }
+    } catch(e) { showToast('⚠️ Error', 'Could not save. Try again.', '#EF4444'); }
+  }
+
+  /* ── TOAST ── */
+  function showToast(title, detail, color) {
+    const t = document.getElementById('toast');
+    document.getElementById('toast-name').textContent   = title;
+    document.getElementById('toast-detail').textContent = detail;
+    t.style.background = color || '#7C3AED';
+    t.classList.add('show');
+    setTimeout(function() { t.classList.remove('show'); }, 3200);
+  }
+
+  async function manualRefresh() { await loadData(); }
+
+  /* ── HELPERS ── */
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  function stringToColor(str) {
+    const palette = ['#7C3AED','#1D4ED8','#15803D','#D97706','#DC2626','#0E7490','#BE185D','#9A3412'];
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    return palette[Math.abs(hash) % palette.length];
+  }
+
+  function parseCSV(text) {
+    const lines   = text.trim().split('\n');
+    const headers = splitLine(lines[0]).map(function(h) { return h.trim().replace(/^"|"$/g,''); });
+    return lines.slice(1).filter(function(l){ return l.trim(); }).map(function(line) {
+      const vals = splitLine(line);
+      const obj  = {};
+      headers.forEach(function(h,i){ obj[h] = (vals[i]||'').trim().replace(/^"|"$/g,''); });
+      return obj;
+    });
+  }
+  function splitLine(line) {
+    const r=[]; let c='',q=false;
+    for (let i=0;i<line.length;i++) {
+      if (line[i]==='"'){q=!q;}
+      else if (line[i]===','&&!q){r.push(c);c='';}
+      else c+=line[i];
+    }
+    r.push(c); return r;
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && document.activeElement === document.getElementById('walkin-name')) {
+      addWalkin();
+    }
+  });
+</script>
+</body>
+</html>

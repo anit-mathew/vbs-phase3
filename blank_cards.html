@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>VBS 2026 — Blank ID Cards</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Segoe UI',Arial,sans-serif; background:#0d3b1e; padding:24px; }
+
+/* CONTROLS */
+.controls {
+  background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.15);
+  color:white; padding:16px 24px; border-radius:16px; margin-bottom:16px;
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
+}
+.controls h1 { font-size:1.1rem; font-weight:800; }
+.controls p  { font-size:.73rem; opacity:.6; margin-top:2px; }
+.btn-print {
+  background:linear-gradient(135deg,#F5B800,#F97316); color:#1A2744;
+  border:none; border-radius:99px; padding:11px 28px;
+  font-size:.88rem; font-weight:900; cursor:pointer;
+  box-shadow:0 4px 15px rgba(245,184,0,.4); transition:all .2s;
+}
+.btn-print:hover { transform:scale(1.05); }
+
+/* TOOLBAR */
+.toolbar {
+  background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12);
+  border-radius:14px; padding:14px 20px; margin-bottom:20px;
+  display:flex; flex-wrap:wrap; gap:20px; align-items:flex-end;
+}
+.toolbar-label { font-size:.68rem; font-weight:800; color:rgba(255,255,255,.55); text-transform:uppercase; letter-spacing:.4px; margin-bottom:6px; display:block; }
+.group-pills { display:flex; gap:6px; flex-wrap:wrap; }
+.gpill {
+  padding:5px 14px; border-radius:99px; font-size:.72rem; font-weight:800;
+  cursor:pointer; border:2px solid transparent; transition:all .15s; color:white; opacity:.55;
+}
+.gpill:hover { opacity:.8; }
+.gpill.active { opacity:1; border-color:rgba(255,255,255,.6); }
+.gp-all     { background:#334155; }
+.gp-prek    { background:#DC2626; }
+.gp-preprim { background:#2563EB; }
+.gp-primary { background:#059669; }
+.gp-junior  { background:#7C3AED; }
+.count-control { display:flex; align-items:center; gap:8px; }
+.count-btn {
+  width:28px; height:28px; border-radius:50%; border:none;
+  background:rgba(255,255,255,.15); color:white; font-size:1rem; font-weight:700;
+  cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .15s;
+}
+.count-btn:hover { background:rgba(255,255,255,.28); }
+.count-val { font-size:.88rem; font-weight:900; color:white; min-width:24px; text-align:center; }
+
+/* ── CARD GRID — exact match ── */
+.card-grid { display:grid; grid-template-columns:repeat(3,1fr); }
+.card-wrap { padding:10px; position:relative; cursor:default; }
+.cut-col { position:absolute; right:0; top:10px; bottom:10px; border-right:1.5px dashed rgba(255,255,255,.3); }
+.cut-row { grid-column:1/-1; height:22px; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,.45); font-size:.6rem; letter-spacing:1px; gap:8px; }
+.cut-row::before,.cut-row::after { content:''; flex:1; border-top:1.5px dashed rgba(255,255,255,.3); }
+
+/* ── CARD — exact match ── */
+.id-card { background:white; border-radius:14px; width:100%; aspect-ratio:3.375/2.125; display:flex; flex-direction:column; position:relative; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,.45); }
+.card-bg { position:absolute; inset:0; z-index:0; background: radial-gradient(ellipse 80% 80% at 105% 105%, rgba(16,185,129,.13) 0%, transparent 55%), radial-gradient(ellipse 50% 60% at -5% -10%, rgba(52,211,153,.09) 0%, transparent 50%), linear-gradient(150deg,#f0fdf4 0%,#fefce8 60%,#fff7ed 100%); }
+.card-bg::after { content:''; position:absolute; inset:0; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cpath d='M4,76 Q20,38 38,18 Q26,52 4,76Z' fill='rgba(34,197,94,.05)'/%3E%3Cpath d='M76,4 Q60,42 42,62 Q54,28 76,4Z' fill='rgba(34,197,94,.04)'/%3E%3C/svg%3E"); background-size:80px 80px; }
+.card-right { position:absolute; right:0; top:0; bottom:0; width:95px; z-index:3; display:flex; align-items:center; justify-content:center; padding:6px 4px; pointer-events:none; }
+
+/* Blank animal placeholder — same size as .card-animal (86×86) */
+.card-animal-blank { width:86px; height:86px; border-radius:12px; background:rgba(0,0,0,.045); border:1.5px dashed rgba(0,0,0,.13); display:flex; align-items:center; justify-content:center; font-size:1.8rem; opacity:.35; }
+
+/* Ribbon — exact match */
+.card-ribbon { position:relative; z-index:4; flex-shrink:0; padding:5px 12px; display:flex; align-items:center; justify-content:space-between; }
+.rb-prek    { background:linear-gradient(90deg,#DC2626,#EA580C); }
+.rb-preprim { background:linear-gradient(90deg,#2563EB,#4F46E5); }
+.rb-primary { background:linear-gradient(90deg,#059669,#0D9488); }
+.rb-junior  { background:linear-gradient(90deg,#7C3AED,#6D28D9); }
+.rb-vbs { font-size:.55rem; font-weight:900; color:rgba(255,255,255,.95); letter-spacing:.4px; line-height:1.4; }
+.rb-vbs span { display:block; font-size:.42rem; color:rgba(255,255,255,.7); font-weight:700; letter-spacing:.2px; }
+.rb-orgs { display:flex; gap:5px; align-items:center; }
+.rb-org  { font-size:.42rem; font-weight:900; color:rgba(255,255,255,.9); background:rgba(255,255,255,.2); border-radius:4px; padding:2px 7px; letter-spacing:.3px; text-transform:uppercase; }
+
+/* Card body — exact padding match: 7px 100px 5px 12px */
+.card-body { position:relative; z-index:2; flex:1; padding:7px 100px 5px 12px; display:flex; flex-direction:column; justify-content:space-between; }
+
+/* Group badge — exact match */
+.group-badge { display:inline-flex; align-items:center; gap:4px; border-radius:99px; padding:2px 10px; font-size:.55rem; font-weight:900; text-transform:uppercase; letter-spacing:.4px; margin-bottom:5px; }
+.bg-prek    { background:#FEE2E2; color:#991B1B; }
+.bg-preprim { background:#DBEAFE; color:#1E40AF; }
+.bg-primary { background:#D1FAE5; color:#065F46; }
+.bg-junior  { background:#EDE9FE; color:#5B21B6; }
+
+/* Blank placeholder bars — positioned where real data would be */
+.blank-name    { height:18px; border-radius:4px; background:rgba(0,0,0,.08); margin-bottom:4px; width:72%; }
+.blank-info    { display:flex; flex-direction:column; gap:2px; }
+.blank-row     { height:7px; border-radius:3px; background:rgba(0,0,0,.05); }
+.blank-row.w60 { width:60%; }
+.blank-row.w45 { width:45%; }
+.blank-row.w55 { width:55%; }
+/* Allergy bar placeholder — matches .allergy-bar style */
+.blank-allergy { margin-top:4px; background:#FEF2F2; border:1.5px dashed #FCA5A5; border-radius:5px; height:16px; width:80%; }
+
+/* Verse strip — exact padding match: 3px 100px 3px 12px */
+.verse-strip { position:relative; z-index:2; flex-shrink:0; background:rgba(6,78,59,.07); border-top:1px solid rgba(6,78,59,.12); padding:3px 100px 3px 12px; }
+.verse-text  { font-size:.43rem; font-style:italic; color:#065F46; font-weight:600; line-height:1.35; }
+.verse-ref   { font-size:.4rem; font-weight:800; color:#0F766E; text-transform:uppercase; letter-spacing:.3px; margin-top:1px; }
+
+/* Footer — exact match */
+.card-footer { position:relative; z-index:2; flex-shrink:0; background:rgba(0,0,0,.04); border-top:1px solid rgba(0,0,0,.06); padding:2px 12px; font-size:.4rem; color:#9CA3AF; font-weight:700; text-align:center; text-transform:uppercase; letter-spacing:.4px; }
+
+/* ── PRINT — exact match to id_cards.html ── */
+@media print {
+  *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+  body { background:white; padding:4mm; }
+  .controls,.toolbar { display:none !important; }
+  .id-card { box-shadow:none; border:1px solid #e5e7eb; }
+  .cut-row { color:#bbb; }
+  .cut-row::before,.cut-row::after { border-top-color:#ccc; }
+  .cut-col { border-right-color:#ccc !important; }
+  @page { size:A4 landscape; margin:6mm; }
+}
+@media (max-width:700px) {
+  .card-grid { grid-template-columns:repeat(2,1fr); }
+  .cut-row { display:none; }
+}
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <div>
+    <h1>🌿 VBS 2026 — Blank ID Cards</h1>
+    <p>Rainforest Falls · India Christian Assembly NJ · July 9–11, 2026</p>
+  </div>
+  <button class="btn-print" onclick="window.print()">🖨️ Print Cards</button>
+</div>
+
+<div class="toolbar">
+  <div>
+    <span class="toolbar-label">Class Group</span>
+    <div class="group-pills">
+      <div class="gpill gp-all active"  onclick="setGroup('all',this)">All Groups</div>
+      <div class="gpill gp-prek"        onclick="setGroup('prek',this)">🎈 Pre-K</div>
+      <div class="gpill gp-preprim"     onclick="setGroup('preprim',this)">🎠 Pre-Primary</div>
+      <div class="gpill gp-primary"     onclick="setGroup('primary',this)">📘 Primary</div>
+      <div class="gpill gp-junior"      onclick="setGroup('junior',this)">🎓 Junior</div>
+    </div>
+  </div>
+  <div>
+    <span class="toolbar-label">Cards per group</span>
+    <div class="count-control">
+      <button class="count-btn" onclick="changeCount(-1)">−</button>
+      <span class="count-val" id="count-val">6</span>
+      <button class="count-btn" onclick="changeCount(1)">+</button>
+    </div>
+  </div>
+</div>
+
+<div class="card-grid" id="card-grid"></div>
+
+<script>
+// Same verses as id_cards.html
+var GROUPS = [
+  { key:'prek',    label:'Pre-K',       emoji:'🎈', ribbon:'rb-prek',    badge:'bg-prek',
+    verse:'\u201cI am fearfully and wonderfully made.\u201d', ref:'Psalm 139:14' },
+  { key:'preprim', label:'Pre-Primary', emoji:'🎠', ribbon:'rb-preprim', badge:'bg-preprim',
+    verse:'\u201cLet the little children come to me.\u201d',   ref:'Mark 10:14' },
+  { key:'primary', label:'Primary',     emoji:'📘', ribbon:'rb-primary', badge:'bg-primary',
+    verse:'\u201cBe strong and courageous. Do not be afraid.\u201d', ref:'Joshua 1:9' },
+  { key:'junior',  label:'Junior',      emoji:'🎓', ribbon:'rb-junior',  badge:'bg-junior',
+    verse:'\u201cI can do all things through Christ who strengthens me.\u201d', ref:'Philippians 4:13' },
+];
+
+var currentGroup  = 'all';
+var cardsPerGroup = 6;
+
+function setGroup(key, el) {
+  currentGroup = key;
+  document.querySelectorAll('.gpill').forEach(function(p){ p.classList.remove('active'); });
+  el.classList.add('active');
+  render();
+}
+
+function changeCount(delta) {
+  cardsPerGroup = Math.max(1, Math.min(30, cardsPerGroup + delta));
+  document.getElementById('count-val').textContent = cardsPerGroup;
+  render();
+}
+
+function makeCard(grp) {
+  return (
+    '<div class="card-wrap">' +
+      '<div class="id-card">' +
+        '<div class="card-bg"></div>' +
+        '<div class="card-right"><div class="card-animal-blank">🌿</div></div>' +
+        '<div class="card-ribbon ' + grp.ribbon + '">' +
+          '<div class="rb-vbs">RAINFOREST FALLS<span>VBS 2026</span></div>' +
+          '<div class="rb-orgs"><span class="rb-org">ICANJ</span><span class="rb-org">PYPA</span></div>' +
+        '</div>' +
+        '<div class="card-body">' +
+          '<div>' +
+            '<div class="blank-name"></div>' +
+            '<span class="group-badge ' + grp.badge + '">' + grp.emoji + ' ' + grp.label + '</span>' +
+          '</div>' +
+          '<div class="blank-info">' +
+            '<div class="blank-row w60"></div>' +
+            '<div class="blank-row w45"></div>' +
+            '<div class="blank-row w55"></div>' +
+            '<div class="blank-allergy"></div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="verse-strip">' +
+          '<div class="verse-text">' + grp.verse + '</div>' +
+          '<div class="verse-ref">\u2014 ' + grp.ref + '</div>' +
+        '</div>' +
+        '<div class="card-footer">India Christian Assembly NJ &amp; PYPA Eastern Region \u00b7 July 9\u201311, 2026</div>' +
+      '</div>' +
+      '<div class="cut-col"></div>' +
+    '</div>'
+  );
+}
+
+function render() {
+  var groups = currentGroup === 'all' ? GROUPS : GROUPS.filter(function(g){ return g.key === currentGroup; });
+  var html = '';
+  var col  = 0;
+
+  groups.forEach(function(grp) {
+    for (var i = 0; i < cardsPerGroup; i++) {
+      if (col > 0 && col % 3 === 0) {
+        html += '<div class="cut-row">\u2702\ufe0e &nbsp; cut &nbsp;</div>';
+      }
+      html += makeCard(grp);
+      col++;
+    }
+    // Pad to next full row of 3
+    var rem = cardsPerGroup % 3;
+    if (rem !== 0) {
+      for (var f = 0; f < (3 - rem); f++) {
+        html += '<div class="card-wrap"></div>';
+        col++;
+      }
+    }
+    // Cut row after each group
+    html += '<div class="cut-row">\u2702\ufe0e &nbsp; cut &nbsp;</div>';
+  });
+
+  document.getElementById('card-grid').innerHTML = html;
+}
+
+render();
+</script>
+</body>
+</html>

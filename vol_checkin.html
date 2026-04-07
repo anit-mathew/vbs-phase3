@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VBS 2026 — Volunteer Check-In</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F0FDF4;
+    --card: #FFFFFF;
+    --primary: #15803D;
+    --primary-light: #DCFCE7;
+    --amber: #D97706;
+    --amber-light: #FEF3C7;
+    --red: #EF4444;
+    --text: #1A2744;
+    --muted: #7A8BAD;
+    --border: #E2E8F0;
+    --radius: 16px;
+    --shadow: 0 4px 24px rgba(21,128,61,.10);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ── PIN SCREEN ── */
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(135deg, #15803D 0%, #065F46 100%);
+    color: white;
+  }
+  .header-branding {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 24px 10px;
+  }
+  .header-title { font-family: 'Fredoka One', cursive; font-size: 1.35rem; line-height: 1.2; }
+  .header-sub   { font-size: .75rem; opacity: .8; margin-top: 3px; }
+  .header-controls {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 0 24px 14px;
+  }
+  .day-drop-btn {
+    padding: 8px 16px; border-radius: 20px; border: 2px solid rgba(255,255,255,.45);
+    background: rgba(255,255,255,.15); color: white; font-weight: 800;
+    font-family: 'Nunito', sans-serif; font-size: .85rem; cursor: pointer;
+    outline: none; appearance: none; -webkit-appearance: none;
+    backdrop-filter: blur(4px); min-width: 0; flex-shrink: 0;
+  }
+  .day-drop-btn option { background: #15803D; color: white; }
+
+  /* ── STATS BAR ── */
+  .stats-bar {
+    background: white; border-bottom: 1px solid var(--border);
+    padding: 10px 20px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  }
+  .stat-pill {
+    display: flex; align-items: center; gap: 7px;
+    padding: 6px 14px; border-radius: 20px; font-family: 'Nunito', sans-serif;
+  }
+  .stat-pill.green  { background: #F0FDF4; border: 1.5px solid #86EFAC; }
+  .stat-pill.amber  { background: #FFFBEB; border: 1.5px solid #FCD34D; }
+  .stat-pill.indigo { background: #EEF2FF; border: 1.5px solid #A5B4FC; }
+  .stat-num { font-family: 'Fredoka One', cursive; font-size: 1.2rem; line-height: 1; }
+  .stat-pill.green  .stat-num { color: #15803D; }
+  .stat-pill.amber  .stat-num { color: #D97706; }
+  .stat-pill.indigo .stat-num { color: #4F46E5; }
+  .stat-lbl { font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); }
+
+  @media (max-width: 480px) {
+    .header-branding { padding: 12px 16px 8px; }
+    .header-title { font-size: 1.1rem; }
+    .header-controls { padding: 0 16px 12px; gap: 8px; }
+    .day-drop-btn { font-size: .8rem; padding: 7px 12px; }
+    .stats-bar { padding: 8px 14px; gap: 6px; }
+    .stat-pill { padding: 5px 10px; }
+    .stat-num { font-size: 1.05rem; }
+    .stat-lbl { font-size: .65rem; }
+    .main { padding: 16px 12px; }
+  }
+
+  /* ── MAIN ── */
+  .main { max-width: 640px; margin: 0 auto; padding: 24px 16px; }
+
+  /* ── USER CARD ── */
+  .search-card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 20px; }
+
+  /* ── RESULT ITEMS ── */
+  .result-item {
+    background: var(--bg); border: 2px solid var(--border); border-radius: 12px;
+    padding: 14px 16px; display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; transition: all .2s;
+  }
+  .result-item:hover { border-color: var(--primary); background: var(--primary-light); }
+  .result-name { font-weight: 800; font-size: 1rem; }
+  .result-meta { font-size: .78rem; color: var(--muted); margin-top: 3px; }
+  .checkin-btn {
+    padding: 10px 18px; background: var(--primary); color: white; border: none;
+    border-radius: 10px; font-weight: 800; font-family: 'Nunito', sans-serif;
+    font-size: .85rem; cursor: pointer; white-space: nowrap; transition: all .2s;
+  }
+  .checkin-btn:hover { opacity: .9; transform: scale(1.03); }
+  .checkout-btn {
+    padding: 10px 18px; background: var(--amber); color: white; border: none;
+    border-radius: 10px; font-weight: 800; font-family: 'Nunito', sans-serif;
+    font-size: .85rem; cursor: pointer; white-space: nowrap; transition: all .2s;
+  }
+  .checkout-btn:hover { opacity: .9; transform: scale(1.03); }
+  .checked-badge {
+    padding: 8px 14px; background: var(--primary-light); color: var(--primary);
+    border-radius: 10px; font-weight: 800; font-size: .78rem; white-space: nowrap;
+    border: 1.5px solid #86EFAC;
+  }
+  .done-badge {
+    padding: 8px 14px; background: #F1F5F9; color: #64748B;
+    border-radius: 10px; font-weight: 800; font-size: .78rem; white-space: nowrap;
+  }
+  .empty-state { text-align: center; padding: 32px 24px; color: var(--muted); font-weight: 700; }
+  .day-warn {
+    background: #FEE2E2; border: 2px solid #EF4444; border-radius: 12px;
+    padding: 14px 18px; margin-bottom: 18px; font-weight: 800; color: #991B1B; font-size: .9rem;
+    display: none;
+  }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px);
+    color: white; padding: 16px 28px; border-radius: 16px;
+    font-weight: 800; font-size: 1rem; box-shadow: 0 8px 32px rgba(0,0,0,.2);
+    transition: transform .4s cubic-bezier(.34,1.56,.64,1); z-index: 999;
+    text-align: center; min-width: 260px;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast-name   { font-family: 'Fredoka One', cursive; font-size: 1.2rem; }
+  .toast-detail { font-size: .82rem; opacity: .9; margin-top: 3px; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 100;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: white; border-radius: 24px; padding: 32px 28px; width: 100%; max-width: 380px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.2); transform: scale(.95); transition: transform .2s; text-align: center;
+  }
+  .modal-overlay.open .modal { transform: scale(1); }
+  .modal-icon  { font-size: 3rem; margin-bottom: 10px; }
+  .modal-title { font-family: 'Fredoka One', cursive; font-size: 1.5rem; margin-bottom: 6px; }
+  .modal-sub   { font-size: .88rem; color: var(--muted); margin-bottom: 24px; line-height: 1.5; }
+  .modal-btns  { display: flex; gap: 10px; }
+  .btn-cancel  { flex: 1; padding: 13px; border: 2px solid var(--border); border-radius: 12px; background: white; font-weight: 800; font-family: 'Nunito', sans-serif; font-size: .9rem; cursor: pointer; color: var(--muted); }
+  .btn-yes     { flex: 2; padding: 13px; border: none; border-radius: 12px; color: white; font-weight: 800; font-family: 'Nunito', sans-serif; font-size: .9rem; cursor: pointer; transition: opacity .15s; }
+  .btn-yes:hover { opacity: .9; }
+
+  .spin { display: inline-block; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 480px) {
+    .header { flex-direction: column; gap: 10px; align-items: flex-start; }
+    .day-btns { flex-direction: column; }
+    .day-btn { min-width: unset; }
+  }
+</style>
+</head>
+<body>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none">
+  <header class="header">
+    <div class="header-branding">
+      <div>
+        <div class="header-title">🙋 Volunteer Check-In / Check-Out</div>
+        <div class="header-sub">VBS 2026 · India Christian Assembly NJ
+          <span id="user-name-display" style="font-weight:800;opacity:1;margin-left:6px"></span>
+        </div>
+      </div>
+    </div>
+    <div class="header-controls">
+      <select id="day-drop" class="day-drop-btn">
+        <option value="0">📅 Select Day…</option>
+        <option value="1">Day 1 · July 9 (Thu)</option>
+        <option value="2">Day 2 · July 10 (Fri)</option>
+        <option value="3">Day 3 · July 11 (Sat)</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="stat-pill green">
+      <span class="stat-num" id="cnt-in">—</span>
+      <span class="stat-lbl">Checked In</span>
+    </div>
+    <div class="stat-pill amber">
+      <span class="stat-num" id="cnt-out">—</span>
+      <span class="stat-lbl">Checked Out</span>
+    </div>
+    <div class="stat-pill indigo">
+      <span class="stat-num" id="cnt-present">—</span>
+      <span class="stat-lbl">Still Present</span>
+    </div>
+    <button onclick="manualRefresh()" id="refresh-btn"
+      style="margin-left:auto;display:flex;align-items:center;gap:6px;padding:6px 14px;background:white;border:2px solid var(--border);border-radius:20px;font-weight:800;font-family:'Nunito',sans-serif;font-size:.78rem;cursor:pointer;color:var(--primary);white-space:nowrap">
+      ↻ Refresh
+    </button>
+  </div>
+
+  <div class="main">
+    <div class="day-warn" id="day-warn">🚨 Please select a day above to check in or out.</div>
+
+    <!-- SINGLE USER CARD -->
+    <div class="search-card" style="padding:0;overflow:hidden">
+      <div id="my-card">
+        <div style="text-align:center;padding:32px 20px;color:var(--muted);font-weight:700">
+          📅 Please select a day above to check in or out.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM CHECK-IN MODAL -->
+<div class="modal-overlay" id="ci-modal">
+  <div class="modal">
+    <div class="modal-icon">✅</div>
+    <div class="modal-title" id="ci-modal-title">Check In</div>
+    <div class="modal-sub" id="ci-modal-sub"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('ci-modal')">Cancel</button>
+      <button class="btn-yes" style="background:#15803D" onclick="confirmCheckin()">✅ Check In</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM CHECK-OUT MODAL -->
+<div class="modal-overlay" id="co-modal">
+  <div class="modal">
+    <div class="modal-icon">🏁</div>
+    <div class="modal-title" id="co-modal-title">Check Out</div>
+    <div class="modal-sub" id="co-modal-sub"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('co-modal')">Cancel</button>
+      <button class="btn-yes" style="background:#D97706" onclick="confirmCheckout()">🏁 Check Out</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div class="toast-name" id="toast-name"></div>
+  <div class="toast-detail" id="toast-detail"></div>
+</div>
+
+<script>
+  const SCRIPT_URL = 'https://pypaonline.org/vbs/api.php';
+
+  let PIN          = null;
+  let currentUser  = { display_name: '' }; // set from validateToken
+  let attendance   = {};  // only this user's record: { checkin_time, checkout_time }
+  let selectedDay  = 0;
+  let _pending     = null;
+
+  /* ── EMBED MODE ── */
+  var _urlParams = new URLSearchParams(window.location.search);
+  var _isEmbed   = _urlParams.get('embed') === '1';
+
+  // Inject embed CSS — compact header when inside Command Center iframe
+  (function() {
+    var s = document.createElement('style');
+    s.textContent = _isEmbed
+      ? '.header-branding { display: none !important; }' +
+        '.header-controls { padding: 8px 16px; justify-content: center; }' +
+        '.day-drop-btn { font-size: .8rem; }'
+      : '';
+    document.head.appendChild(s);
+  })();
+
+  /* ── AUTH — token from URL param (embed) or sessionStorage ── */
+  async function loadPIN() {
+    var tokenFromUrl     = _urlParams.get('token');
+    var tokenFromSession = sessionStorage.getItem('vbs_token');
+    var tokenToTry       = tokenFromUrl || tokenFromSession;
+
+    if (tokenToTry) {
+      try {
+        const res  = await fetch(SCRIPT_URL + '?action=validateToken&token=' + encodeURIComponent(tokenToTry) + '&t=' + Date.now());
+        const json = await res.json();
+        if (json.status === 'ok' && json.user.panels && json.user.panels.includes('vol_attendance')) {
+          PIN         = tokenToTry;
+          currentUser = { display_name: json.user.display_name || json.user.username };
+          document.getElementById('app').style.display = 'block';
+          showApp();
+          return;
+        }
+      } catch(e) {}
+    }
+
+    // No valid token
+    if (_isEmbed) {
+      document.getElementById('app').style.display = 'block';
+      document.querySelector('.main').innerHTML =
+        '<div style="text-align:center;padding:60px 24px">' +
+          '<div style="font-size:3rem;margin-bottom:12px">🔒</div>' +
+          '<div style="font-family:Fredoka One,cursive;font-size:1.3rem;color:#1A2744;margin-bottom:8px">Session Expired</div>' +
+          '<div style="font-size:.85rem;color:#7A8BAD">Please log out and log back in to the Command Center.</div>' +
+        '</div>';
+      return;
+    }
+    window.location.href = 'index.html';
+  }
+
+  loadPIN();
+
+  function showApp() {
+    // Show the user's name in the header
+    document.getElementById('user-name-display').textContent = currentUser.display_name;
+    loadDaySettings();
+    document.getElementById('day-drop').addEventListener('change', function() {
+      selectedDay = parseInt(this.value) || 0;
+      attendance  = {};
+      updateStats();
+      renderMyCard();
+      if (selectedDay) loadMyAttendance();
+    });
+  }
+
+  async function loadDaySettings() {
+    const sel = document.getElementById('day-drop');
+    if (!sel || !PIN) return;
+    try {
+      const res  = await fetch(SCRIPT_URL + '?action=getSettings&token=' + encodeURIComponent(PIN) + '&t=' + Date.now());
+      const json = await res.json();
+      const s    = json.settings || {};
+      const days = [
+        { val:'1', label:'Day 1 · July 9 (Thu)',  key:'day1_enabled' },
+        { val:'2', label:'Day 2 · July 10 (Fri)', key:'day2_enabled' },
+        { val:'3', label:'Day 3 · July 11 (Sat)', key:'day3_enabled' },
+      ];
+      const prev = sel.value;
+      [...sel.options].forEach(o => { if (o.value !== '0') o.remove(); });
+      let any = false;
+      days.forEach(d => {
+        if (s[d.key] === '1') {
+          const opt = document.createElement('option');
+          opt.value = d.val; opt.textContent = d.label;
+          sel.appendChild(opt); any = true;
+        }
+      });
+      if (!any) {
+        const opt = document.createElement('option');
+        opt.value = ''; opt.disabled = true;
+        opt.textContent = '⏳ No days enabled yet';
+        sel.appendChild(opt);
+      }
+      if (prev && prev !== '0') {
+        const still = [...sel.options].find(o => o.value === prev && !o.disabled);
+        sel.value = still ? prev : '0';
+      }
+    } catch(e) {
+      const days = [['1','Day 1 · July 9 (Thu)'],['2','Day 2 · July 10 (Fri)'],['3','Day 3 · July 11 (Sat)']];
+      [...sel.options].forEach(o => { if (o.value !== '0') o.remove(); });
+      days.forEach(([v,l]) => { const o = document.createElement('option'); o.value=v; o.textContent=l; sel.appendChild(o); });
+    }
+  }
+
+  /* ── LOAD THIS USER'S ATTENDANCE RECORD ── */
+  async function loadMyAttendance() {
+    if (!selectedDay) return;
+    try {
+      const res  = await fetch(SCRIPT_URL + '?action=volRead&secret=' + encodeURIComponent(PIN) + '&day=' + selectedDay + '&t=' + Date.now());
+      const json = await res.json();
+      if (json.status !== 'ok') return;
+      // Find only this user's record (latest by id)
+      const myRecords = json.data.filter(function(r) {
+        return r.vol_name.toLowerCase() === currentUser.display_name.toLowerCase();
+      });
+      if (myRecords.length) {
+        const latest = myRecords[myRecords.length - 1];
+        attendance = { checkin_time: latest.checkin_time, checkout_time: latest.checkout_time || '' };
+      } else {
+        attendance = {};
+      }
+      updateStats();
+      renderMyCard();
+    } catch(e) {}
+  }
+
+  /* ── STATS — only this user's status ── */
+  function updateStats() {
+    const isIn      = !!attendance.checkin_time;
+    const isOut     = isIn && !!attendance.checkout_time;
+    const isPresent = isIn && !isOut;
+    document.getElementById('cnt-in').textContent      = isIn      ? '1' : '0';
+    document.getElementById('cnt-out').textContent     = isOut     ? '1' : '0';
+    document.getElementById('cnt-present').textContent = isPresent ? '1' : '0';
+  }
+
+  /* ── RENDER THE SINGLE USER CARD ── */
+  function renderMyCard() {
+    const el   = document.getElementById('my-card');
+    const name = currentUser.display_name;
+    if (!selectedDay) {
+      el.innerHTML =
+        '<div style="text-align:center;padding:32px 20px;color:var(--muted);font-weight:700">' +
+          '📅 Please select a day above to check in or out.' +
+        '</div>';
+      return;
+    }
+    const avatarColor = stringToColor(name);
+    const avatarHtml =
+      '<div style="width:56px;height:56px;border-radius:50%;background:' + avatarColor + ';color:white;' +
+      'display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.5rem;flex-shrink:0">' +
+      name.charAt(0).toUpperCase() + '</div>';
+
+    if (!attendance.checkin_time) {
+      // Not checked in
+      el.innerHTML =
+        '<div style="display:flex;align-items:center;gap:16px;padding:24px">' +
+          avatarHtml +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-weight:800;font-size:1.15rem;color:var(--text)">' + escHtml(name) + '</div>' +
+            '<div style="font-size:.82rem;color:var(--muted);margin-top:3px">Not checked in yet today</div>' +
+          '</div>' +
+          '<button class="checkin-btn" onclick="openCheckin()" style="font-size:.95rem;padding:12px 22px">Check In ✅</button>' +
+        '</div>';
+    } else if (!attendance.checkout_time) {
+      // Checked in, still present
+      el.innerHTML =
+        '<div style="display:flex;align-items:center;gap:16px;padding:24px">' +
+          avatarHtml +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-weight:800;font-size:1.15rem;color:var(--text)">' + escHtml(name) + '</div>' +
+            '<div style="font-size:.82rem;color:#15803D;font-weight:800;margin-top:3px">✅ Checked in at ' + attendance.checkin_time + '</div>' +
+          '</div>' +
+          '<button class="checkout-btn" onclick="openCheckout()" style="font-size:.95rem;padding:12px 22px">Check Out 🏁</button>' +
+        '</div>';
+    } else {
+      // Fully checked out
+      el.innerHTML =
+        '<div style="display:flex;align-items:center;gap:16px;padding:24px">' +
+          avatarHtml +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-weight:800;font-size:1.15rem;color:var(--text)">' + escHtml(name) + '</div>' +
+            '<div style="font-size:.82rem;margin-top:4px">' +
+              '<span style="color:#15803D;font-weight:800">✅ In: ' + attendance.checkin_time + '</span>' +
+              '<span style="color:var(--muted);margin:0 8px">·</span>' +
+              '<span style="color:#D97706;font-weight:800">🏁 Out: ' + attendance.checkout_time + '</span>' +
+            '</div>' +
+          '</div>' +
+          '<div style="padding:10px 18px;background:#F1F5F9;color:#64748B;border-radius:10px;font-weight:800;font-size:.85rem;white-space:nowrap">✔ Done</div>' +
+        '</div>';
+    }
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  /* ── OPEN MODALS ── */
+  function openCheckin() {
+    if (!selectedDay) {
+      document.getElementById('day-warn').style.display = 'block';
+      return;
+    }
+    document.getElementById('day-warn').style.display = 'none';
+    _pending = true;
+    const now  = new Date();
+    const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const dayLabels = {1:'Day 1 · July 9 (Thu)', 2:'Day 2 · July 10 (Fri)', 3:'Day 3 · July 11 (Sat)'};
+    document.getElementById('ci-modal-title').textContent = 'Check In — ' + currentUser.display_name;
+    document.getElementById('ci-modal-sub').textContent   = dayLabels[selectedDay] + ' · ' + time;
+    document.getElementById('ci-modal').classList.add('open');
+  }
+
+  function openCheckout() {
+    if (!selectedDay) return;
+    _pending = true;
+    const now  = new Date();
+    const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const dayLabels = {1:'Day 1 · July 9 (Thu)', 2:'Day 2 · July 10 (Fri)', 3:'Day 3 · July 11 (Sat)'};
+    document.getElementById('co-modal-title').textContent = 'Check Out — ' + currentUser.display_name;
+    document.getElementById('co-modal-sub').textContent   =
+      dayLabels[selectedDay] + ' · ' + time +
+      (attendance.checkin_time ? '\nChecked in at ' + attendance.checkin_time : '');
+    document.getElementById('co-modal').classList.add('open');
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+    _pending = null;
+  }
+
+  /* ── CONFIRM ACTIONS ── */
+  async function confirmCheckin() {
+    if (!_pending) return;
+    const name = currentUser.display_name;
+    closeModal('ci-modal');
+    const now  = new Date();
+    const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    try {
+      const res  = await fetch(SCRIPT_URL, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ action: 'volCheckin', secret: PIN, day: selectedDay, volName: name, checkinTime: time, checkinBy: name })
+      });
+      const json = await res.json();
+      if (json.status === 'already_in') {
+        showToast('⚠️ Already checked in', 'You are already checked in today', '#D97706');
+      } else if (json.status === 'ok') {
+        attendance = { checkin_time: time, checkout_time: '' };
+        updateStats();
+        renderMyCard();
+        showToast('✅ Checked in!', 'Day ' + selectedDay + ' · ' + time, '#15803D');
+      } else {
+        showToast('⚠️ Error', json.message || 'Could not check in', '#EF4444');
+      }
+    } catch(e) { showToast('⚠️ Network error', 'Please try again', '#EF4444'); }
+  }
+
+  async function confirmCheckout() {
+    if (!_pending) return;
+    const name = currentUser.display_name;
+    closeModal('co-modal');
+    const now  = new Date();
+    const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    try {
+      const res  = await fetch(SCRIPT_URL, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ action: 'volCheckout', secret: PIN, day: selectedDay, volName: name, checkoutTime: time, checkoutBy: name })
+      });
+      const json = await res.json();
+      if (json.status === 'ok') {
+        attendance.checkout_time = time;
+        updateStats();
+        renderMyCard();
+        showToast('🏁 Checked out!', 'Day ' + selectedDay + ' · ' + time, '#D97706');
+      } else {
+        showToast('⚠️ Error', json.message || 'Could not check out', '#EF4444');
+      }
+    } catch(e) { showToast('⚠️ Network error', 'Please try again', '#EF4444'); }
+  }
+
+  /* ── TOAST ── */
+  function showToast(title, detail, color) {
+    const t = document.getElementById('toast');
+    document.getElementById('toast-name').textContent   = title;
+    document.getElementById('toast-detail').textContent = detail;
+    t.style.background = color || '#15803D';
+    t.classList.add('show');
+    setTimeout(function() { t.classList.remove('show'); }, 3500);
+  }
+
+  async function manualRefresh() {
+    await loadMyAttendance();
+  }
+
+  /* ── AVATAR COLOR from name ── */
+  function stringToColor(str) {
+    const palette = ['#15803D','#1D4ED8','#7C3AED','#D97706','#DC2626','#0E7490','#065F46','#9A3412'];
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    return palette[Math.abs(hash) % palette.length];
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeModal('ci-modal');
+      closeModal('co-modal');
+    }
+  });
+</script>
+</body>
+</html>
