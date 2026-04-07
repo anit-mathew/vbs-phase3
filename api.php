@@ -72,6 +72,12 @@ function getSettings() {
     ];
 }
 
+function isDayEnabled($day) {
+    $s = getSettings();
+    $key = 'day' . intval($day) . '_enabled';
+    return ($s[$key] ?? '0') === '1';
+}
+
 function getPin($role) {
     try {
         $db   = getDB();
@@ -170,6 +176,15 @@ if ($method === 'GET') {
     $action = $_GET['action'] ?? '';
     $secret = $_GET['secret'] ?? '';
     $day    = intval($_GET['day'] ?? 0);
+
+    // ── GET DATA VERSION (public — used by panels to detect resets) ──
+    if ($action === 'getDataVersion') {
+        $db = getDB();
+        $db->exec("CREATE TABLE IF NOT EXISTS settings (`key` VARCHAR(100) PRIMARY KEY, `value` VARCHAR(255) NOT NULL)");
+        $stmt = $db->query("SELECT `value` FROM settings WHERE `key` = 'data_version' LIMIT 1");
+        $row  = $stmt->fetch();
+        respond(['status' => 'ok', 'version' => $row ? $row['value'] : '0']);
+    }
 
     // ── GET SETTINGS (requires valid token or admin secret) ──
     if ($action === 'getSettings') {
@@ -543,6 +558,11 @@ function getGeoLocation($ip) {
         }
         $db = getDB();
 
+        // Verify day is enabled
+        if (!isDayEnabled(intval($body['day']))) {
+            respond(['status' => 'error', 'message' => 'This day is not enabled. Please contact the administrator.']);
+        }
+
         // Check if a record already exists for this child today
         $stmt = $db->prepare('SELECT id, checkout_time FROM checkins WHERE day = ? AND child_name = ? ORDER BY id DESC LIMIT 1');
         $stmt->execute([$body['day'], $body['childName']]);
@@ -587,6 +607,11 @@ function getGeoLocation($ip) {
     if ($action === 'checkout') {
         checkAuthToken($secret);
         $db = getDB();
+
+        // Verify day is enabled
+        if (!isDayEnabled(intval($body['day']))) {
+            respond(['status' => 'error', 'message' => 'This day is not enabled. Please contact the administrator.']);
+        }
         // Migrate column if it doesn't exist yet
         try { $db->exec("ALTER TABLE checkins ADD COLUMN early_checkout_reason VARCHAR(255) NOT NULL DEFAULT ''"); } catch(Exception $e) {}
         // Find the most recent active (not yet checked out) record for this child
@@ -622,6 +647,11 @@ function getGeoLocation($ip) {
         $user = validateToken($secret);
         if (!$user) respond(['status' => 'error', 'message' => 'Unauthorized']);
         $db = getDB();
+
+        // Verify day is enabled
+        if (!isDayEnabled(intval($body['day']))) {
+            respond(['status' => 'error', 'message' => 'This day is not enabled. Please contact the administrator.']);
+        }
         $db->exec("CREATE TABLE IF NOT EXISTS vol_attendance (
             id            INT AUTO_INCREMENT PRIMARY KEY,
             day           TINYINT NOT NULL,
@@ -652,6 +682,11 @@ function getGeoLocation($ip) {
         $user = validateToken($secret);
         if (!$user) respond(['status' => 'error', 'message' => 'Unauthorized']);
         $db  = getDB();
+
+        // Verify day is enabled
+        if (!isDayEnabled(intval($body['day']))) {
+            respond(['status' => 'error', 'message' => 'This day is not enabled. Please contact the administrator.']);
+        }
         $day = intval($body['day']);
         $name = trim($body['volName'] ?? '');
         $find = $db->prepare('SELECT id FROM vol_attendance WHERE day = ? AND vol_name = ? AND (checkout_time IS NULL OR checkout_time = "") ORDER BY id DESC LIMIT 1');

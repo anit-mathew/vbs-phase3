@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VBS 2026 — Check Out</title>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="info_modal.js"></script>
 <style>
   :root {
     --bg: #FFF7ED;
@@ -310,6 +311,7 @@
       <select class="co-drop" id="class-drop-m" onchange="setClassMobile(this.value)">
         <option value="">🏫 Select Class…</option>
       </select>
+      <button class="info-btn" onclick="showInfoModal('checkout')" title="How to use this page">ⓘ</button>
     </div>
   </header>
 
@@ -659,6 +661,10 @@
             // Load day settings NOW (after PIN is set so token auth works)
             loadDaySettings();
             setInterval(loadDaySettings, 30000);
+            startDataVersionPolling(function() {
+              loadClassData();
+              showResetBannerPage();
+            });
           } else {
             _authFailed();
           }
@@ -1071,12 +1077,14 @@
       console.error('Checkout write failed:', e);
       delete checkoutMap[kid.ChildName];
       renderKids();
+      const isDayDisabled = e.message && e.message.toLowerCase().includes('not enabled');
       const t = document.getElementById('toast');
-      document.getElementById('toast-name').textContent   = '⚠️ Checkout failed!';
-      document.getElementById('toast-detail').textContent = 'Could not save. Please try again.';
+      document.getElementById('toast-name').textContent   = isDayDisabled ? '🚫 Day not enabled!' : '⚠️ Checkout failed!';
+      document.getElementById('toast-detail').textContent = isDayDisabled ? 'This day has been disabled by the administrator.' : 'Could not save. Please try again.';
       t.style.background = '#EF4444';
       t.classList.add('show');
-      setTimeout(() => { t.classList.remove('show'); t.style.background = ''; }, 4000);
+      setTimeout(() => { t.classList.remove('show'); t.style.background = ''; }, 5000);
+      if (isDayDisabled) loadDaySettings();
     }
   }
 

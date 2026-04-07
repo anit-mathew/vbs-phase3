@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VBS 2026 — 🎽 Merch Station</title>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="info_modal.js"></script>
 <style>
   :root {
     --bg: #FFF7ED;
@@ -166,6 +167,7 @@
     </div>
     <div class="header-controls">
       <button class="header-btn" onclick="manualRefresh()">↻ Refresh</button>
+      <button class="info-btn" onclick="showInfoModal('merch')" title="How to use this page">ⓘ</button>
     </div>
   </header>
 
@@ -274,6 +276,10 @@
           currentUser = { display_name: json.user.display_name || json.user.username };
           document.getElementById('app').style.display = 'block';
           loadData();
+          startDataVersionPolling(function() {
+            loadData();
+            showResetBannerPage();
+          });
           return;
         }
       } catch(e) {}

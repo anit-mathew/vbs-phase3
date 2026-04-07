@@ -37,6 +37,16 @@ function logAction($action, $detail = '') {
     } catch (Exception $e) {}
 }
 
+function bumpDataVersion() {
+    try {
+        $db = getDB();
+        $db->exec("CREATE TABLE IF NOT EXISTS settings (`key` VARCHAR(100) PRIMARY KEY, `value` VARCHAR(255) NOT NULL)");
+        $ts = (string) time();
+        $db->prepare("INSERT INTO settings (`key`, `value`) VALUES ('data_version', ?) ON DUPLICATE KEY UPDATE `value` = ?")
+           ->execute([$ts, $ts]);
+    } catch (Exception $e) {}
+}
+
 // ── LOGIN ──
 if (($_POST['action'] ?? '') === 'login') {
     if ($_POST['password'] === ADMIN_PASSWORD) {
@@ -194,6 +204,7 @@ if (isset($_SESSION['vbs_admin'])) {
             try { $db->exec('DELETE FROM vol_attendance'); $db->exec('ALTER TABLE vol_attendance AUTO_INCREMENT = 1'); } catch(Exception $e) {}
             try { $db->exec('DELETE FROM tshirt_distribution'); $db->exec('ALTER TABLE tshirt_distribution AUTO_INCREMENT = 1'); } catch(Exception $e) {}
             logAction('reset_database', 'All checkin + volunteer attendance + tshirt distribution records deleted, AUTO_INCREMENT reset to 1');
+            bumpDataVersion();
             header('Location: admin.php?msg=reset_ok');
             exit;
         }
@@ -392,6 +403,7 @@ if (isset($_SESSION['vbs_admin'])) {
             }
 
             logAction('restore_from_sheet', 'Restored from Google Sheet: ' . implode(', ', $totalLog));
+            bumpDataVersion();
             ob_end_clean();
             // Show debug info in flash message temporarily
             $debugInfo = implode(' | ', $debugLog);
@@ -522,6 +534,7 @@ if (isset($_SESSION['vbs_admin'])) {
                 . (!empty($data['vol_attendance']) ? ', ' . count($data['vol_attendance']) . ' vol attendance' : '')
                 . (!empty($data['tshirt_distribution']) ? ', ' . count($data['tshirt_distribution']) . ' merch records' : '');
             logAction('restore_json', 'Restored: ' . $totalRestored);
+            bumpDataVersion();
             header('Location: admin.php?msg=restore_json_ok');
             exit;
         } catch (Exception $e) {

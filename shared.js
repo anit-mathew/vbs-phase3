@@ -458,3 +458,145 @@ function refreshAll() {
   document.getElementById('ts').textContent =
     'Updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
+/* ── Info Button Modal ── */
+const PAGE_INFO = {
+  'command-center': {
+    icon: '⛪',
+    title: 'Command Center',
+    desc: 'The main dashboard for VBS 2026. View real-time registration stats, volunteer assignments, and live attendance — all in one place.',
+    steps: [
+      'Select the <strong>Kids</strong> tab to see registered children grouped by grade or class.',
+      'Select the <strong>Volunteers</strong> tab to view team assignments and roles.',
+      'Use the <strong>Attendance</strong> tab to monitor who is currently checked in.',
+      'Click <strong>↻ Refresh</strong> at any time to pull the latest data from the spreadsheet.',
+      'Use the <strong>Grade / Class</strong> toggle to switch between views.'
+    ],
+    tip: '💡 This page is read-only. Use Check In / Check Out pages to update attendance.'
+  },
+  'checkin': {
+    icon: '✅',
+    title: 'Check In',
+    desc: 'Used at the entrance desk to register children arriving for the day.',
+    steps: [
+      'Select the correct <strong>day</strong> from the dropdown at the top.',
+      'Search for a child by name, family, or class using the search bar.',
+      'Tap the child\'s card and click <strong>Check In</strong> to mark them as arrived.',
+      'The green counter updates live as children are checked in.',
+      'Use <strong>🪪 ID Cards</strong> to print wristbands or labels.'
+    ],
+    tip: '💡 Make sure the correct day is selected before checking anyone in.'
+  },
+  'checkout': {
+    icon: '🚪',
+    title: 'Check Out',
+    desc: 'Used at the exit to safely release children to their authorized guardians.',
+    steps: [
+      'Select the correct <strong>day</strong> from the selector.',
+      'Search for the child by name or family.',
+      'Verify the guardian\'s identity, then tap <strong>Check Out</strong>.',
+      'Only children who are currently checked in can be checked out.',
+      'The stats bar shows how many children are still inside.'
+    ],
+    tip: '⚠️ Always verify guardian identity before releasing a child.'
+  },
+  'vol-checkin': {
+    icon: '🙋',
+    title: 'Volunteer Check-In',
+    desc: 'Allows volunteers to sign in at the start of each VBS day.',
+    steps: [
+      'Select the correct <strong>day</strong> from the dropdown.',
+      'Search for your name in the list.',
+      'Tap your card and press <strong>Check In</strong> to mark yourself as present.',
+      'Your team assignment and role will be shown on your card.',
+      'Check-ins are recorded in real time.'
+    ],
+    tip: '💡 Volunteers should check in before campers start arriving.'
+  },
+  'merch': {
+    icon: '🎽',
+    title: 'Merch Station',
+    desc: 'Manage T-shirt and merchandise distribution for VBS participants.',
+    steps: [
+      'Search for a participant by name to find their merch order.',
+      'Review the item(s) listed on their card.',
+      'Click <strong>Mark as Given</strong> once the item has been handed out.',
+      'Use the filter tabs to view <strong>Pending</strong>, <strong>Given</strong>, or <strong>All</strong> orders.',
+      'Stats at the top show how many items remain to be distributed.'
+    ],
+    tip: '💡 Items marked as given are saved instantly — no need to refresh.'
+  }
+};
+
+function showInfoModal(pageKey) {
+  const info = PAGE_INFO[pageKey];
+  if (!info) return;
+  const existing = document.getElementById('info-overlay');
+  if (existing) existing.remove();
+  const stepsHtml = info.steps.map((s, i) =>
+    `<div class="info-step"><div class="info-step-num">${i+1}</div><div class="info-step-text">${s}</div></div>`
+  ).join('');
+  const tipHtml = info.tip ? `<div class="info-modal-tip">${info.tip}</div>` : '';
+  const el = document.createElement('div');
+  el.id = 'info-overlay';
+  el.className = 'info-overlay';
+  el.innerHTML = `
+    <div class="info-modal" role="dialog" aria-modal="true">
+      <div class="info-modal-header">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="info-modal-icon">${info.icon}</div>
+          <div class="info-modal-title">${info.title}</div>
+        </div>
+        <button class="info-modal-close" onclick="document.getElementById('info-overlay').remove()" aria-label="Close">✕</button>
+      </div>
+      <div class="info-modal-body">
+        <div class="info-modal-desc">${info.desc}</div>
+        <div class="info-modal-steps">${stepsHtml}</div>
+        ${tipHtml}
+      </div>
+    </div>`;
+  el.addEventListener('click', function(e) { if (e.target === el) el.remove(); });
+  document.addEventListener('keydown', function esc(e) {
+    if (e.key === 'Escape') { el.remove(); document.removeEventListener('keydown', esc); }
+  });
+  document.body.appendChild(el);
+}
+
+/* ── Data Version Polling (reset detection) ── */
+(function() {
+  const API = 'https://pypaonline.org/vbs/api.php';
+  const KEY  = 'vbs_data_version';
+  let _timer = null;
+
+  function startDataVersionPolling(onReset) {
+    if (_timer) clearInterval(_timer);
+    // Store current version on first load
+    fetch(API + '?action=getDataVersion')
+      .then(r => r.json())
+      .then(d => {
+        if (d.status === 'ok') {
+          const stored = sessionStorage.getItem(KEY);
+          if (!stored) {
+            sessionStorage.setItem(KEY, d.version);
+          } else if (stored !== d.version) {
+            sessionStorage.setItem(KEY, d.version);
+            if (typeof onReset === 'function') onReset();
+          }
+        }
+      }).catch(() => {});
+
+    _timer = setInterval(function() {
+      fetch(API + '?action=getDataVersion')
+        .then(r => r.json())
+        .then(d => {
+          if (d.status !== 'ok') return;
+          const stored = sessionStorage.getItem(KEY);
+          if (stored && stored !== d.version) {
+            sessionStorage.setItem(KEY, d.version);
+            if (typeof onReset === 'function') onReset();
+          }
+        }).catch(() => {});
+    }, 15000);
+  }
+
+  window.startDataVersionPolling = startDataVersionPolling;
+})();

@@ -569,3 +569,61 @@ mark { background:#FFF3CD; border-radius:3px; padding:0 2px; font-style:normal; 
   font-size: .85rem; font-weight: 700; transition: transform .2s;
 }
 .portal-card:hover .portal-card-arrow { transform: translateX(3px); }
+/* ── Info Button & Modal ── */
+.info-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(255,255,255,.18); border: 1.5px solid rgba(255,255,255,.45);
+  color: white; font-size: .85rem; font-weight: 900; cursor: pointer;
+  font-family: 'Nunito', sans-serif; line-height: 1; flex-shrink: 0;
+  transition: background .18s, transform .15s; user-select: none;
+}
+.info-btn:hover { background: rgba(255,255,255,.35); transform: scale(1.1); }
+
+.info-overlay {
+  position: fixed; inset: 0; background: rgba(10,20,50,.55);
+  z-index: 9999; display: flex; align-items: center; justify-content: center;
+  padding: 20px; backdrop-filter: blur(3px);
+  animation: infoFadeIn .18s ease;
+}
+@keyframes infoFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.info-modal {
+  background: white; border-radius: 20px; max-width: 420px; width: 100%;
+  box-shadow: 0 24px 64px rgba(0,0,0,.22); overflow: hidden;
+  animation: infoSlideUp .2s ease;
+}
+@keyframes infoSlideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.info-modal-header {
+  padding: 20px 22px 14px; display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 12px;
+}
+.info-modal-icon { font-size: 2rem; line-height: 1; flex-shrink: 0; }
+.info-modal-title { font-family: 'Fredoka One', cursive; font-size: 1.25rem; color: #1A2744; line-height: 1.2; margin-top: 2px; }
+.info-modal-close {
+  width: 28px; height: 28px; border-radius: 50%; border: none;
+  background: #F1F5F9; color: #7A8BAD; font-size: 1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  font-weight: 900; transition: background .15s;
+}
+.info-modal-close:hover { background: #E2E8F0; color: #1A2744; }
+.info-modal-body { padding: 0 22px 22px; }
+.info-modal-desc { font-size: .88rem; color: #4A5568; line-height: 1.6; margin-bottom: 14px; }
+.info-modal-steps { display: flex; flex-direction: column; gap: 9px; }
+.info-step {
+  display: flex; gap: 10px; align-items: flex-start;
+  background: #F8FAFF; border-radius: 10px; padding: 9px 12px;
+}
+.info-step-num {
+  min-width: 22px; height: 22px; border-radius: 50%;
+  background: #1A2744; color: white; font-size: .72rem;
+  font-weight: 900; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+}
+.info-step-text { font-size: .82rem; color: #2D3748; line-height: 1.5; font-weight: 600; }
+.info-modal-tip {
+  margin-top: 14px; padding: 10px 12px; border-radius: 10px;
+  background: #FFFBEB; border: 1px solid #FCD34D;
+  font-size: .78rem; color: #92400E; font-weight: 600; line-height: 1.5;
+}

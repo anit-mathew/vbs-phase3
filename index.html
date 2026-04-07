@@ -94,6 +94,7 @@
       </button>
     </span>
     <button class="btn-refresh" onclick="refreshAll()">↻ Refresh</button>
+    <button class="info-btn" onclick="showInfoModal('command-center')" title="How to use this page">ⓘ</button>
   </div>
 </header>
 
@@ -310,6 +311,22 @@
     setInterval(refreshAll, 120000);
     updateToggleBtn(document.getElementById('kids-dm-toggle'));
     resetIdleTimer();
+    startDataVersionPolling(function() {
+      showResetBanner();
+      refreshAll();
+    });
+  }
+
+  function showResetBanner() {
+    var b = document.getElementById('reset-banner');
+    if (!b) {
+      b = document.createElement('div');
+      b.id = 'reset-banner';
+      b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:8888;background:#EF4444;color:white;text-align:center;padding:10px 16px;font-family:Nunito,sans-serif;font-weight:800;font-size:.9rem;display:flex;align-items:center;justify-content:center;gap:12px';
+      b.innerHTML = '⚠️ Data was reset by an administrator — this page has been refreshed with the latest data. <button onclick="document.getElementById(\'reset-banner\').remove()" style="background:rgba(255,255,255,.25);border:none;border-radius:6px;padding:3px 10px;color:white;font-weight:800;cursor:pointer;font-family:Nunito,sans-serif">✕</button>';
+      document.body.prepend(b);
+      setTimeout(function() { if (b.parentNode) b.remove(); }, 8000);
+    }
   }
 
   /* ── BUILD TAB BAR (only panels user has access to) ── */

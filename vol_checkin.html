@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VBS 2026 — Volunteer Check-In</title>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="info_modal.js"></script>
 <style>
   :root {
     --bg: #F0FDF4;
@@ -184,6 +185,7 @@
         <option value="2">Day 2 · July 10 (Fri)</option>
         <option value="3">Day 3 · July 11 (Sat)</option>
       </select>
+      <button class="info-btn" onclick="showInfoModal('vol-checkin')" title="How to use this page">ⓘ</button>
     </div>
   </header>
 
@@ -324,6 +326,13 @@
       renderMyCard();
       if (selectedDay) loadMyAttendance();
     });
+    startDataVersionPolling(function() {
+      attendance = {};
+      updateStats();
+      renderMyCard();
+      if (selectedDay) loadMyAttendance();
+      showResetBannerPage();
+    });
   }
 
   async function loadDaySettings() {
@@ -357,6 +366,19 @@
       if (prev && prev !== '0') {
         const still = [...sel.options].find(o => o.value === prev && !o.disabled);
         sel.value = still ? prev : '0';
+      } else if (!prev || prev === '0') {
+        // Auto-select the first enabled day if nothing was selected
+        const firstEnabled = [...sel.options].find(o => o.value && o.value !== '0' && !o.disabled);
+        if (firstEnabled) sel.value = firstEnabled.value;
+      }
+      // Fire change to update selectedDay + card whenever the dropdown value is set
+      const newVal = parseInt(sel.value) || 0;
+      if (newVal !== selectedDay) {
+        selectedDay = newVal;
+        attendance  = {};
+        updateStats();
+        renderMyCard();
+        if (selectedDay) loadMyAttendance();
       }
     } catch(e) {
       const days = [['1','Day 1 · July 9 (Thu)'],['2','Day 2 · July 10 (Fri)'],['3','Day 3 · July 11 (Sat)']];
@@ -416,12 +438,13 @@
 
     if (!attendance.checkin_time) {
       // Not checked in
+      const dayLabels = {1:'Day 1 · July 9 (Thu)', 2:'Day 2 · July 10 (Fri)', 3:'Day 3 · July 11 (Sat)'};
       el.innerHTML =
         '<div style="display:flex;align-items:center;gap:16px;padding:24px">' +
           avatarHtml +
           '<div style="flex:1;min-width:0">' +
             '<div style="font-weight:800;font-size:1.15rem;color:var(--text)">' + escHtml(name) + '</div>' +
-            '<div style="font-size:.82rem;color:var(--muted);margin-top:3px">Not checked in yet today</div>' +
+            '<div style="font-size:.82rem;color:var(--muted);margin-top:3px">Not checked in · ' + (dayLabels[selectedDay] || '') + '</div>' +
           '</div>' +
           '<button class="checkin-btn" onclick="openCheckin()" style="font-size:.95rem;padding:12px 22px">Check In ✅</button>' +
         '</div>';
@@ -513,7 +536,9 @@
         renderMyCard();
         showToast('✅ Checked in!', 'Day ' + selectedDay + ' · ' + time, '#15803D');
       } else {
-        showToast('⚠️ Error', json.message || 'Could not check in', '#EF4444');
+        const isDayDisabled = (json.message || '').toLowerCase().includes('not enabled');
+        showToast(isDayDisabled ? '🚫 Day not enabled!' : '⚠️ Error', json.message || 'Could not check in', '#EF4444');
+        if (isDayDisabled) { selectedDay = 0; attendance = {}; updateStats(); renderMyCard(); loadDaySettings(); }
       }
     } catch(e) { showToast('⚠️ Network error', 'Please try again', '#EF4444'); }
   }
@@ -536,7 +561,9 @@
         renderMyCard();
         showToast('🏁 Checked out!', 'Day ' + selectedDay + ' · ' + time, '#D97706');
       } else {
-        showToast('⚠️ Error', json.message || 'Could not check out', '#EF4444');
+        const isDayDisabled = (json.message || '').toLowerCase().includes('not enabled');
+        showToast(isDayDisabled ? '🚫 Day not enabled!' : '⚠️ Error', json.message || 'Could not check out', '#EF4444');
+        if (isDayDisabled) { selectedDay = 0; attendance = {}; updateStats(); renderMyCard(); loadDaySettings(); }
       }
     } catch(e) { showToast('⚠️ Network error', 'Please try again', '#EF4444'); }
   }
