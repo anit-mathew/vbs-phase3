@@ -319,6 +319,7 @@
     // Show the user's name in the header
     document.getElementById('user-name-display').textContent = currentUser.display_name;
     loadDaySettings();
+    setInterval(loadDaySettings, 30000);
     document.getElementById('day-drop').addEventListener('change', function() {
       selectedDay = parseInt(this.value) || 0;
       attendance  = {};
